@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!-- Cloud Foundry 2012.02.03 Beta Copyright (c) [2009-2012] VMware, Inc. All Rights Reserved. This product is licensed to 
-	you under the Apache License, Version 2.0 (the "License"). You may not use this product except in compliance with the License. 
-	This product includes a number of subcomponents with separate copyright notices and license terms. Your use of these subcomponents 
-	is subject to the terms and conditions of the subcomponent's license, as noted in the LICENSE file. -->
-<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:mvc="http://www.springframework.org/schema/mvc"
-	xmlns="http://www.springframework.org/schema/beans" xmlns:context="http://www.springframework.org/schema/context"
+<!-- Cloud Foundry 2012.02.03 Beta Copyright (c) [2009-2012] VMware, Inc. 
+	All Rights Reserved. This product is licensed to you under the Apache License, 
+	Version 2.0 (the "License"). You may not use this product except in compliance 
+	with the License. This product includes a number of subcomponents with separate 
+	copyright notices and license terms. Your use of these subcomponents is subject 
+	to the terms and conditions of the subcomponent's license, as noted in the 
+	LICENSE file. -->
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:mvc="http://www.springframework.org/schema/mvc" xmlns="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context"
 	xmlns:sec="http://www.springframework.org/schema/security" xmlns:oauth="http://www.springframework.org/schema/security/oauth2"
 	xmlns:util="http://www.springframework.org/schema/util"
 	xsi:schemaLocation="http://www.springframework.org/schema/security/oauth2 http://www.springframework.org/schema/security/spring-security-oauth2-1.0.xsd
@@ -17,9 +21,11 @@
 	<!-- The data source has to be defined first -->
 	<import resource="env-context.xml" />
 
-	<context:property-placeholder properties-ref="applicationProperties" />
+	<context:property-placeholder
+		properties-ref="applicationProperties" />
 
-	<bean id="messageSource" class="org.springframework.context.support.ResourceBundleMessageSource">
+	<bean id="messageSource"
+		class="org.springframework.context.support.ResourceBundleMessageSource">
 		<property name="basename" value="messages" />
 	</bean>
 
@@ -29,7 +35,8 @@
 	<sec:http pattern="/info" security="none" />
 	<sec:http pattern="/oauth/token" security="none" />
 
-	<bean class="org.cloudfoundry.identity.uaa.security.web.SecurityFilterChainPostProcessor">
+	<bean
+		class="org.cloudfoundry.identity.uaa.security.web.SecurityFilterChainPostProcessor">
 		<property name="requireHttps" value="${require_https:false}" />
 		<property name="dumpRequests" value="${dump_requests:false}" />
 		<property name="redirectToHttps">
@@ -39,32 +46,38 @@
 		</property>
 	</bean>
 
-	<http pattern="/autologin" create-session="stateless" entry-point-ref="basicAuthenticationEntryPoint"
-		xmlns="http://www.springframework.org/schema/security">
+	<http pattern="/autologin" create-session="stateless"
+		entry-point-ref="basicAuthenticationEntryPoint" xmlns="http://www.springframework.org/schema/security">
 		<intercept-url pattern="/**" access="IS_AUTHENTICATED_FULLY" />
 		<anonymous enabled="false" />
-		<custom-filter ref="clientAuthenticationFilter" position="BASIC_AUTH_FILTER" />
+		<custom-filter ref="clientAuthenticationFilter"
+			position="BASIC_AUTH_FILTER" />
 	</http>
 
-	<http request-matcher-ref="autologinAuthorizeRequestMatcher" entry-point-ref="loginEntryPoint"
-		xmlns="http://www.springframework.org/schema/security">
+	<http request-matcher-ref="autologinAuthorizeRequestMatcher"
+		entry-point-ref="loginEntryPoint" xmlns="http://www.springframework.org/schema/security">
 		<!-- TODO: add entry point that can redirect back to client app? -->
 		<anonymous enabled="false" />
-		<custom-filter ref="autologinAuthenticationFilter" position="FORM_LOGIN_FILTER" />
+		<custom-filter ref="autologinAuthenticationFilter"
+			position="FORM_LOGIN_FILTER" />
 	</http>
 
-	<bean id="basicAuthenticationEntryPoint" class="org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint">
+	<bean id="basicAuthenticationEntryPoint"
+		class="org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint">
 		<property name="realmName" value="UAA/client" />
 		<property name="typeName" value="Basic" />
 	</bean>
 
-	<bean id="clientAuthenticationFilter" class="org.cloudfoundry.identity.uaa.login.ClientInfoAuthenticationFilter">
-		<property name="clientInfoUrl" value="${uaa.clientinfo.url:http://localhost:8080/uaa/clientinfo}" />
+	<bean id="clientAuthenticationFilter"
+		class="org.cloudfoundry.identity.uaa.login.ClientInfoAuthenticationFilter">
+		<property name="clientInfoUrl"
+			value="${uaa.clientinfo.url:http://localhost:8080/uaa/clientinfo}" />
 		<property name="allowedGrantTypes" value="authorization_code" />
 		<property name="authenticationEntryPoint" ref="basicAuthenticationEntryPoint" />
 	</bean>
 
-	<bean id="autologinAuthenticationFilter" class="org.cloudfoundry.identity.uaa.authentication.AuthzAuthenticationFilter">
+	<bean id="autologinAuthenticationFilter"
+		class="org.cloudfoundry.identity.uaa.authentication.AuthzAuthenticationFilter">
 		<constructor-arg ref="autologinAuthenticationManager" />
 		<property name="parameterNames">
 			<list>
@@ -80,15 +93,18 @@
 		</property>
 	</bean>
 
-	<bean id="autologinAuthenticationManager" class="org.cloudfoundry.identity.uaa.login.AutologinAuthenticationManager">
+	<bean id="autologinAuthenticationManager"
+		class="org.cloudfoundry.identity.uaa.login.AutologinAuthenticationManager">
 		<property name="codeStore" ref="autologinCodeStore" />
 	</bean>
 
-	<bean id="autologinCodeStore" class="org.cloudfoundry.identity.uaa.login.DefaultAutologinCodeStore">
+	<bean id="autologinCodeStore"
+		class="org.cloudfoundry.identity.uaa.login.DefaultAutologinCodeStore">
 		<property name="expireCodeWhenUsed" value="${autologin.expire_when_used:true}" />
 	</bean>
 
-	<bean id="autologinAuthorizeRequestMatcher" class="org.cloudfoundry.identity.uaa.security.web.UaaRequestMatcher">
+	<bean id="autologinAuthorizeRequestMatcher"
+		class="org.cloudfoundry.identity.uaa.security.web.UaaRequestMatcher">
 		<constructor-arg value="/oauth/authorize" />
 		<property name="accept">
 			<list>
@@ -104,9 +120,11 @@
 		</property>
 	</bean>
 
-	<!-- For backwards compatibility to the old way of posting credentials to /authorize endpoint -->
-	<http name="oldAuthzEndpointSecurity" request-matcher-ref="oauthAuthorizeRequestMatcherOld" create-session="stateless"
-		entry-point-ref="oauthAuthenticationEntryPoint" authentication-manager-ref="remoteAuthenticationManager"
+	<!-- For backwards compatibility to the old way of posting credentials to 
+		/authorize endpoint -->
+	<http name="oldAuthzEndpointSecurity" request-matcher-ref="oauthAuthorizeRequestMatcherOld"
+		create-session="stateless" entry-point-ref="oauthAuthenticationEntryPoint"
+		authentication-manager-ref="remoteAuthenticationManager"
 		xmlns="http://www.springframework.org/schema/security">
 		<intercept-url pattern="/**" access="IS_AUTHENTICATED_FULLY" />
 		<custom-filter ref="authzAuthenticationFilter" position="FORM_LOGIN_FILTER" />
@@ -114,7 +132,8 @@
 		<access-denied-handler ref="oauthAccessDeniedHandler" />
 	</http>
 
-	<bean id="oauthAuthorizeRequestMatcherOld" class="org.cloudfoundry.identity.uaa.security.web.UaaRequestMatcher">
+	<bean id="oauthAuthorizeRequestMatcherOld"
+		class="org.cloudfoundry.identity.uaa.security.web.UaaRequestMatcher">
 		<constructor-arg value="/oauth/authorize" />
 		<property name="accept">
 			<list>
@@ -130,7 +149,8 @@
 		</property>
 	</bean>
 
-	<bean id="oauthAuthorizeRequestMatcher" class="org.cloudfoundry.identity.uaa.security.web.UaaRequestMatcher">
+	<bean id="oauthAuthorizeRequestMatcher"
+		class="org.cloudfoundry.identity.uaa.security.web.UaaRequestMatcher">
 		<constructor-arg value="/oauth/authorize" />
 		<property name="accept">
 			<list>
@@ -147,8 +167,9 @@
 	</bean>
 
 	<!-- Version of the /authorize endpoint for stateless clients such as VMC -->
-	<http name="statelessAuthzEndpointSecurity" request-matcher-ref="oauthAuthorizeRequestMatcher" create-session="stateless"
-		entry-point-ref="oauthAuthenticationEntryPoint" authentication-manager-ref="remoteAuthenticationManager"
+	<http name="statelessAuthzEndpointSecurity" request-matcher-ref="oauthAuthorizeRequestMatcher"
+		create-session="stateless" entry-point-ref="oauthAuthenticationEntryPoint"
+		authentication-manager-ref="remoteAuthenticationManager"
 		xmlns="http://www.springframework.org/schema/security">
 		<intercept-url pattern="/**" access="IS_AUTHENTICATED_FULLY" />
 		<custom-filter ref="authzAuthenticationFilter" position="FORM_LOGIN_FILTER" />
@@ -156,36 +177,45 @@
 		<access-denied-handler ref="oauthAccessDeniedHandler" />
 	</http>
 
-	<http name="uiSecurity" xmlns="http://www.springframework.org/schema/security" authentication-manager-ref="remoteAuthenticationManager"
+	<http name="uiSecurity" xmlns="http://www.springframework.org/schema/security"
+		authentication-manager-ref="remoteAuthenticationManager"
 		disable-url-rewriting="true" entry-point-ref="loginEntryPoint">
 		<intercept-url pattern="/login*" access="IS_AUTHENTICATED_ANONYMOUSLY" />
 		<intercept-url pattern="/logout.do" access="IS_AUTHENTICATED_ANONYMOUSLY" />
 		<intercept-url pattern="/**" access="IS_AUTHENTICATED_FULLY" />
-		<form-login login-page="/login" username-parameter="username" password-parameter="password"
-			login-processing-url="/login.do" authentication-failure-url="/login?error=true" />
+		<form-login login-page="/login" username-parameter="username"
+			password-parameter="password" login-processing-url="/login.do"
+			authentication-failure-url="/login?error=true" />
 		<logout logout-url="/logout.do" success-handler-ref="logoutHandler" />
-		<!-- The filter that uses Oauth2 auth-code flow to acquire an Oauth2 token if the user doesn't already have one -->
+		<!-- The filter that uses Oauth2 auth-code flow to acquire an Oauth2 token 
+			if the user doesn't already have one -->
 		<custom-filter ref="oauth2ClientFilter" after="EXCEPTION_TRANSLATION_FILTER" />
 	</http>
 
-	<authentication-manager xmlns="http://www.springframework.org/schema/security" />
+	<authentication-manager
+		xmlns="http://www.springframework.org/schema/security" />
 
-	<bean id="logoutHandler" class="org.springframework.security.web.authentication.logout.SimpleUrlLogoutSuccessHandler">
+	<bean id="logoutHandler"
+		class="org.springframework.security.web.authentication.logout.SimpleUrlLogoutSuccessHandler">
 		<property name="targetUrlParameter" value="redirect" />
 		<property name="defaultTargetUrl" value="/login" />
 	</bean>
 
-	<bean id="loginEntryPoint" class="org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint">
+	<bean id="loginEntryPoint"
+		class="org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint">
 		<constructor-arg value="/login" />
 	</bean>
 
-	<bean id="oauthAuthenticationEntryPoint" class="org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint">
+	<bean id="oauthAuthenticationEntryPoint"
+		class="org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint">
 		<property name="realmName" value="UAA/oauth" />
 	</bean>
 
-	<bean id="oauthAccessDeniedHandler" class="org.springframework.security.oauth2.provider.error.OAuth2AccessDeniedHandler" />
+	<bean id="oauthAccessDeniedHandler"
+		class="org.springframework.security.oauth2.provider.error.OAuth2AccessDeniedHandler" />
 
-	<bean id="authzAuthenticationFilter" class="org.cloudfoundry.identity.uaa.authentication.AuthzAuthenticationFilter">
+	<bean id="authzAuthenticationFilter"
+		class="org.cloudfoundry.identity.uaa.authentication.AuthzAuthenticationFilter">
 		<constructor-arg ref="remoteAuthenticationManager" />
 		<property name="parameterNames">
 			<list>
@@ -200,14 +230,16 @@
 
 	<mvc:annotation-driven>
 		<mvc:message-converters>
-			<bean class="org.cloudfoundry.identity.uaa.login.AutologinController.AutologinRequestConverter" />
+			<bean
+				class="org.cloudfoundry.identity.uaa.login.AutologinController.AutologinRequestConverter" />
 		</mvc:message-converters>
 	</mvc:annotation-driven>
 
 	<mvc:interceptors>
 		<bean class="org.cloudfoundry.identity.uaa.login.AnalyticsInterceptor">
 			<property name="analytics">
-				<bean class="org.cloudfoundry.identity.uaa.login.AnalyticsInterceptor.Analytics">
+				<bean
+					class="org.cloudfoundry.identity.uaa.login.AnalyticsInterceptor.Analytics">
 					<property name="code" value="${analytics.code:UA-22181585-29}" />
 					<property name="domain" value="${analytics.domain:cloudfoundry.com}" />
 				</bean>
@@ -217,7 +249,8 @@
 
 	<mvc:default-servlet-handler />
 
-	<bean id="viewResolver" class="org.springframework.web.servlet.view.ContentNegotiatingViewResolver">
+	<bean id="viewResolver"
+		class="org.springframework.web.servlet.view.ContentNegotiatingViewResolver">
 		<property name="mediaTypes">
 			<map>
 				<entry key="html" value="text/html" />
@@ -225,13 +258,15 @@
 			</map>
 		</property>
 		<property name="viewResolvers">
-			<bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+			<bean
+				class="org.springframework.web.servlet.view.InternalResourceViewResolver">
 				<property name="prefix" value="/WEB-INF/jsp/" />
 				<property name="suffix" value=".jsp" />
 			</bean>
 		</property>
 		<property name="defaultViews">
-			<bean class="org.springframework.web.servlet.view.json.MappingJacksonJsonView" />
+			<bean
+				class="org.springframework.web.servlet.view.json.MappingJacksonJsonView" />
 		</property>
 	</bean>
 
@@ -262,7 +297,8 @@
 
 	<bean id="healthzEndpoint" class="org.cloudfoundry.identity.uaa.web.HealthzEndpoint" />
 
-	<oauth:resource id="uaa" access-token-uri="${uaa.token.url:http://localhost:8080/uaa/oauth/token}"
+	<oauth:resource id="uaa"
+		access-token-uri="${uaa.token.url:http://localhost:8080/uaa/oauth/token}"
 		client-id="login" client-secret="${LOGIN_SECRET:loginsecret}" type="client_credentials" />
 
 	<!--apply the oauth client context -->
@@ -271,59 +307,82 @@
 	<oauth:rest-template id="restTemplate" resource="approvals" />
 
 	<!--define an oauth 2 resource for api access -->
-	<oauth:resource id="approvals" type="authorization_code" client-id="login" client-secret="${LOGIN_SECRET:loginsecret}"
-		access-token-uri="${uaa.token.url:http://localhost:8080/uaa/oauth/token}" user-authorization-uri="${login.authorize.url:http://localhost:8080/login/oauth/authorize}" />
+	<oauth:resource id="approvals" type="authorization_code"
+		client-id="login" client-secret="${LOGIN_SECRET:loginsecret}"
+		access-token-uri="${uaa.token.url:http://localhost:8080/uaa/oauth/token}"
+		user-authorization-uri="${login.authorize.url:http://localhost:8080/login/oauth/authorize}" />
 
 	<oauth:web-expression-handler id="oauthWebExpressionHandler" />
 
 	<bean id="approvalsController" class="org.cloudfoundry.identity.uaa.login.ProfileController">
 		<constructor-arg ref="restTemplate" />
-		<property name="approvalsUri" value="${uaa.approvals.url:http://localhost:8080/uaa/approvals}" />
+		<property name="approvalsUri"
+			value="${uaa.approvals.url:http://localhost:8080/uaa/approvals}" />
 		<property name="links" ref="links" />
 	</bean>
 
-	<beans profile="default">
-		<bean id="remoteAuthenticationManager" class="org.cloudfoundry.identity.uaa.login.RemoteUaaAuthenticationManager">
-			<property name="loginUrl" value="${uaa.login.url:http://localhost:8080/uaa/authenticate}" />
-		</bean>
-	</beans>
+	<sec:authentication-manager alias="ldapAuthenticationManager">
+		<sec:authentication-provider ref="ldapAuthProvider" />
+	</sec:authentication-manager>
 
-	<beans profile="ldap">
+	<bean id="ldapAuthManager"
+		class="org.cloudfoundry.identity.uaa.login.UsernamePasswordExtractingAuthenticationManager">
+		<constructor-arg ref="ldapAuthenticationManager" />
+	</bean>
 
-		<sec:authentication-manager alias="ldapAuthenticationManager">
-			<sec:authentication-provider ref="ldapAuthProvider" />
-		</sec:authentication-manager>
+	<bean id="contextSource"
+		class="org.springframework.security.ldap.DefaultSpringSecurityContextSource">
+		<constructor-arg
+			value="${ldap.base.url:ldap://soda.rd.netease.com:389/dc=rd,dc=netease,dc=com}" />
+	</bean>
 
-		<bean id="remoteAuthenticationManager" class="org.cloudfoundry.identity.uaa.login.UsernamePasswordExtractingAuthenticationManager">
-			<constructor-arg ref="ldapAuthenticationManager" />
-		</bean>
+	<bean id="ldapAuthProvider"
+		class="org.springframework.security.ldap.authentication.LdapAuthenticationProvider">
+		<constructor-arg>
+			<bean
+				class="org.springframework.security.ldap.authentication.BindAuthenticator">
+				<constructor-arg ref="contextSource" />
+				<property name="userDnPatterns">
+					<list>
+						<value>uid={0},ou=people</value>
+					</list>
+				</property>
+			</bean>
+		</constructor-arg>
+		<constructor-arg>
+			<bean
+				class="org.springframework.security.ldap.authentication.NullLdapAuthoritiesPopulator" />
+		</constructor-arg>
+		<property name="authoritiesMapper">
+			<bean
+				class="org.springframework.security.core.authority.mapping.SimpleAuthorityMapper">
+				<property name="defaultAuthority" value="ROLE_USER" />
+			</bean>
+		</property>
+	</bean>
+	<bean id="remoteAuthenticationManager"
+		class="org.cloudfoundry.identity.uaa.login.RemoteUaaAuthenticationManager">
+		<constructor-arg ref="ldapAuthManager" />
+		<property name="scimUrl"
+			value="${uaa.scim.url:http://localhost:8080/uaa/Users}" />
+		<property name="loginUrl"
+			value="${uaa.login.url:http://localhost:8080/uaa/authenticate}" />
+	</bean>
 
-		<bean id="contextSource" class="org.springframework.security.ldap.DefaultSpringSecurityContextSource">
-			<constructor-arg value="${ldap.base.url:ldap://localhost:33389/dc=springframework,dc=org}" />
-		</bean>
-
-		<bean id="ldapAuthProvider" class="org.springframework.security.ldap.authentication.LdapAuthenticationProvider">
-			<constructor-arg>
-				<bean class="org.springframework.security.ldap.authentication.BindAuthenticator">
-					<constructor-arg ref="contextSource" />
-					<property name="userDnPatterns">
-						<list>
-							<value>uid={0},ou=people</value>
-						</list>
-					</property>
-				</bean>
-			</constructor-arg>
-			<constructor-arg>
-				<bean class="org.springframework.security.ldap.authentication.NullLdapAuthoritiesPopulator" />
-			</constructor-arg>
-			<property name="authoritiesMapper">
-				<bean class="org.springframework.security.core.authority.mapping.SimpleAuthorityMapper">
-					<property name="defaultAuthority" value="ROLE_USER" />
-				</bean>
-			</property>
-		</bean>
-
-	</beans>
+	<!--beans profile="ldap"> <sec:authentication-manager alias="ldapAuthenticationManager"> 
+		<sec:authentication-provider ref="ldapAuthProvider" /> </sec:authentication-manager> 
+		<bean id="remoteAuthenticationManager" class="org.cloudfoundry.identity.uaa.login.UsernamePasswordExtractingAuthenticationManager"> 
+		<constructor-arg ref="ldapAuthenticationManager" /> </bean> <bean id="contextSource" 
+		class="org.springframework.security.ldap.DefaultSpringSecurityContextSource"> 
+		<constructor-arg value="${ldap.base.url:ldap://localhost:33389/dc=springframework,dc=org}" 
+		/> </bean> <bean id="ldapAuthProvider" class="org.springframework.security.ldap.authentication.LdapAuthenticationProvider"> 
+		<constructor-arg> <bean class="org.springframework.security.ldap.authentication.BindAuthenticator"> 
+		<constructor-arg ref="contextSource" /> <property name="userDnPatterns"> 
+		<list> <value>uid={0},ou=people</value> </list> </property> </bean> </constructor-arg> 
+		<constructor-arg> <bean class="org.springframework.security.ldap.authentication.NullLdapAuthoritiesPopulator" 
+		/> </constructor-arg> <property name="authoritiesMapper"> <bean class="org.springframework.security.core.authority.mapping.SimpleAuthorityMapper"> 
+		<property name="defaultAuthority" value="ROLE_USER" /> </bean> </property> 
+		</bean> </beans> -->
 
 
 </beans>
