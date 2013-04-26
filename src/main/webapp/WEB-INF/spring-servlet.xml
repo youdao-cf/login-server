@@ -307,6 +307,7 @@
 	<oauth:rest-template id="restTemplate" resource="approvals" />
 
 	<!--define an oauth 2 resource for api access -->
+    <!-- oauth:resource id="approvals" type="authorization_code" -->
 	<oauth:resource id="approvals" type="authorization_code"
 		client-id="login" client-secret="${LOGIN_SECRET:loginsecret}"
 		access-token-uri="${uaa.token.url:http://localhost:8080/uaa/oauth/token}"
@@ -365,6 +366,7 @@
 	<bean id="remoteAuthenticationManager"
 		class="org.cloudfoundry.identity.uaa.login.RemoteUaaAuthenticationManager">
 		<constructor-arg ref="ldapAuthHelper" />
+		<constructor-arg ref="restTemplate"/>
 		<property name="scimUrl"
 			value="${uaa.scim.url:http://localhost:8080/uaa/Users}" />
 		<property name="loginUrl"

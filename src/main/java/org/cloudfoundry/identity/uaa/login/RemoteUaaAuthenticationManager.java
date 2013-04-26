@@ -65,22 +65,22 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 
 	private String scimUrl = DEFAULT_SCIM_URL;
 
-//	private final AuthenticationManager delegate;
-	
+	// private final AuthenticationManager delegate;
+
 	private LdapAuthHelper ldapAuthHelper;
 
-	public RemoteUaaAuthenticationManager(LdapAuthHelper ldapAuthHelper) {
+	public RemoteUaaAuthenticationManager(LdapAuthHelper ldapAuthHelper, RestTemplate restTemplate) {
 		super();
 		this.ldapAuthHelper = ldapAuthHelper;
-		RestTemplate restTemplate = new RestTemplate();
-		// The default java.net client doesn't allow you to handle 4xx responses
-		restTemplate
-				.setRequestFactory(new HttpComponentsClientHttpRequestFactory());
-		restTemplate.setErrorHandler(new DefaultResponseErrorHandler() {
-			protected boolean hasError(HttpStatus statusCode) {
-				return statusCode.series() == HttpStatus.Series.SERVER_ERROR;
-			}
-		});
+//		RestTemplate restTemplate = new RestTemplate();
+//		// The default java.net client doesn't allow you to handle 4xx responses
+//		restTemplate
+//				.setRequestFactory(new HttpComponentsClientHttpRequestFactory());
+//		restTemplate.setErrorHandler(new DefaultResponseErrorHandler() {
+//			protected boolean hasError(HttpStatus statusCode) {
+//				return statusCode.series() == HttpStatus.Series.SERVER_ERROR;
+//			}
+//		});
 		this.restTemplate = restTemplate;
 	}
 
@@ -108,35 +108,36 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 	public Authentication authenticate(Authentication authentication)
 			throws AuthenticationException {
 
-//		if (authentication == null
-//				|| authentication instanceof UsernamePasswordAuthenticationToken) {
-//			return authentication;
-//		}
-//
-//		UsernamePasswordAuthenticationToken output = new UsernamePasswordAuthenticationToken(
-//				authentication, authentication.getCredentials(),
-//				authentication.getAuthorities());
-//		output.setAuthenticated(authentication.isAuthenticated());
-//		output.setDetails(authentication.getDetails());
-//
-//		Authentication ldapResult = null;
-//		try {
-//			ldapResult = delegate.authenticate(output);
-//		} catch (AuthenticationException e) {
-//			throw new BadCredentialsException("LDAP authentication failed");
-//		}
+		// if (authentication == null
+		// || authentication instanceof UsernamePasswordAuthenticationToken) {
+		// return authentication;
+		// }
+		//
+		// UsernamePasswordAuthenticationToken output = new
+		// UsernamePasswordAuthenticationToken(
+		// authentication, authentication.getCredentials(),
+		// authentication.getAuthorities());
+		// output.setAuthenticated(authentication.isAuthenticated());
+		// output.setDetails(authentication.getDetails());
+		//
+		// Authentication ldapResult = null;
+		// try {
+		// ldapResult = delegate.authenticate(output);
+		// } catch (AuthenticationException e) {
+		// throw new BadCredentialsException("LDAP authentication failed");
+		// }
 
 		String username = authentication.getName();
 		String password = (String) authentication.getCredentials();
-		
-		boolean ldapAuthResult = ldapAuthHelper.authenticate(username, password);
-		
+
+		boolean ldapAuthResult = ldapAuthHelper
+				.authenticate(username, password);
+
 		if (!ldapAuthResult) {
 			throw new BadCredentialsException("LDAP authentication failed");
 		}
-		
+
 		logger.debug("Ldap auth successfuly with " + username + ", " + password);
-		
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
@@ -154,18 +155,34 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 		if (response.getStatusCode() == HttpStatus.OK) {
 			String userFromUaa = (String) response.getBody().get("username");
 			if (userFromUaa.equals(userFromUaa)) {
-				logger.info("Successful authentication request for "
-						+ username);
+				logger.info("Successful authentication request for " + username);
 				return new UsernamePasswordAuthenticationToken(username, null,
 						UaaAuthority.USER_AUTHORITIES);
 			}
 		} else if (response.getStatusCode() == HttpStatus.UNAUTHORIZED) {
 			logger.info("Cannot authenticate for LDAP is not created, and create it now");
+
+//			logger.info("Login as admin");
+//			parameters.set("username", "admin3");
+//			parameters.set("password", "123");
+//			@SuppressWarnings("rawtypes")
+//			ResponseEntity<Map> adminResponse = restTemplate.exchange(loginUrl,
+//					HttpMethod.POST,
+//					new HttpEntity<MultiValueMap<String, Object>>(parameters,
+//							headers), Map.class);
+//			if (adminResponse.getStatusCode() != HttpStatus.OK) {
+//				logger.info("Cannot login as admin, remote server problem");
+//				throw new RuntimeException("LDAP authentication failed");
+//			}
+//			
+//			SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
+//					"admin3", "123", UaaAuthority.ADMIN_AUTHORITIES));
+
 			ScimUser user = new ScimUser();
 			user.setUserName(username);
 			user.setName(new ScimUser.Name(username, ""));
 			user.addEmail(username);
-			user.setUserType(UaaAuthority.UAA_USER.getUserType());
+			// user.setUserType(UaaAuthority.UAA_USER.getUserType());
 
 			ResponseEntity<ScimUser> userResponse = restTemplate.postForEntity(
 					scimUrl, user, ScimUser.class);
