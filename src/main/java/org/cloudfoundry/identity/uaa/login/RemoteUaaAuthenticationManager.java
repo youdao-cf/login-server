@@ -13,7 +13,9 @@
 
 package org.cloudfoundry.identity.uaa.login;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.logging.Log;
@@ -28,6 +30,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -37,7 +41,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.DefaultResponseErrorHandler;
-import org.springframework.web.client.RestOperations;
 import org.springframework.web.client.RestTemplate;
 
 /**
@@ -55,7 +58,7 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 
 	private final Log logger = LogFactory.getLog(getClass());
 
-	private RestOperations restTemplate;
+	private RestTemplate restTemplate;
 
 	private static String DEFAULT_LOGIN_URL = "http://uaa.cloudfoundry.com/authenticate";
 
@@ -74,13 +77,17 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 		this.ldapAuthHelper = ldapAuthHelper;
 //		RestTemplate restTemplate = new RestTemplate();
 //		// The default java.net client doesn't allow you to handle 4xx responses
-//		restTemplate
-//				.setRequestFactory(new HttpComponentsClientHttpRequestFactory());
-//		restTemplate.setErrorHandler(new DefaultResponseErrorHandler() {
-//			protected boolean hasError(HttpStatus statusCode) {
-//				return statusCode.series() == HttpStatus.Series.SERVER_ERROR;
-//			}
-//		});
+		List<HttpMessageConverter<?>> list = new ArrayList<HttpMessageConverter<?>>();
+		list.add(new MappingJackson2HttpMessageConverter());
+		restTemplate.setMessageConverters(list);
+		
+		restTemplate
+				.setRequestFactory(new HttpComponentsClientHttpRequestFactory());
+		restTemplate.setErrorHandler(new DefaultResponseErrorHandler() {
+			protected boolean hasError(HttpStatus statusCode) {
+				return statusCode.series() == HttpStatus.Series.SERVER_ERROR;
+			}
+		});
 //		this.restTemplate = restTemplate;
 	}
 
@@ -96,7 +103,7 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 	 * @param restTemplate
 	 *            a rest template to use
 	 */
-	public void setRestTemplate(RestOperations restTemplate) {
+	public void setRestTemplate(RestTemplate restTemplate) {
 		this.restTemplate = restTemplate;
 	}
 
@@ -192,10 +199,9 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 			PasswordChangeRequest change = new PasswordChangeRequest();
 			change.setPassword(password);
 
-			HttpHeaders userHeaders = new HttpHeaders();
 			ResponseEntity<Void> result = restTemplate.exchange(scimUrl
 					+ "/{id}/password", HttpMethod.PUT,
-					new HttpEntity<PasswordChangeRequest>(change, userHeaders),
+					new HttpEntity<PasswordChangeRequest>(change, headers),
 					null, newUser.getId());
 			if (result.getStatusCode() != HttpStatus.OK) {
 				throw new RuntimeException("Cannot create user in UAA");
