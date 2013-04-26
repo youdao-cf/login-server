@@ -194,24 +194,15 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 			user.setName(new ScimUser.Name(username, " "));
 			user.addEmail(username);
 			user.setPassword(password);
-			user.setUserType(UaaAuthority.UAA_USER.getUserType());
+			user.setUserType(UaaAuthority.UAA_NONE.getUserType());
 			ScimMeta meta = new ScimMeta();
-			Date now = null;
-			SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-			try {
-				now = dateFormat.parse(dateFormat.format(new Date()));
-			} catch (ParseException e) {
-				logger.error("Date format failed");
-				e.printStackTrace();
-			}
-			meta.setCreated(now);
-			meta.setLastModified(now);
-			user.setActive(true);
+			meta.setCreated(null);
+			meta.setLastModified(null);
 			user.setMeta(meta);
 
 			ResponseEntity<ScimUser> userResponse = scimTemplate.postForEntity(
 					scimUrl, user, ScimUser.class);
-
+			
 			ScimUser newUser = userResponse.getBody();
 
 			PasswordChangeRequest change = new PasswordChangeRequest();
