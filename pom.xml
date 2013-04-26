@@ -83,7 +83,8 @@
 		<login.path>/login</login.path>
 		<identity.version>${project.parent.version}</identity.version>
 		<spring.version>3.1.2.RELEASE</spring.version>
-		<!-- Brain dead install plugin (Maven 3) cannot extract this stuff from its own configuration -->
+		<!-- Brain dead install plugin (Maven 3) cannot extract this stuff from 
+			its own configuration -->
 		<file>target/${project.artifactId}-${project.version}.war</file>
 		<groupId>${project.groupId}</groupId>
 		<artifactId>login</artifactId>
@@ -258,7 +259,11 @@
 	</build>
 
 	<dependencies>
-
+		<dependency>
+			<groupId>com.fasterxml.jackson.dataformat</groupId>
+			<artifactId>jackson-dataformat-xml</artifactId>
+			<version>2.1.4</version>
+		</dependency>
 		<dependency>
 			<groupId>org.cloudfoundry.identity</groupId>
 			<artifactId>cloudfoundry-identity-common</artifactId>
@@ -274,7 +279,7 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>org.cloudfoundry.identity</groupId>
 			<artifactId>cloudfoundry-identity-scim</artifactId>

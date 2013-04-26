@@ -72,9 +72,10 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 
 	private LdapAuthHelper ldapAuthHelper;
 
-	public RemoteUaaAuthenticationManager(LdapAuthHelper ldapAuthHelper) {
+	public RemoteUaaAuthenticationManager(LdapAuthHelper ldapAuthHelper, RestTemplate restTemplate) {
 		super();
 		this.ldapAuthHelper = ldapAuthHelper;
+		this.restTemplate = restTemplate;
 //		RestTemplate restTemplate = new RestTemplate();
 //		// The default java.net client doesn't allow you to handle 4xx responses
 		List<HttpMessageConverter<?>> list = new ArrayList<HttpMessageConverter<?>>();
@@ -88,7 +89,6 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 				return statusCode.series() == HttpStatus.Series.SERVER_ERROR;
 			}
 		});
-//		this.restTemplate = restTemplate;
 	}
 
 	/**

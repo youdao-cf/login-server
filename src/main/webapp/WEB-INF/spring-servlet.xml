@@ -362,15 +362,14 @@
 		</property>
 	</bean>
 	<bean id="ldapAuthHelper" class="org.cloudfoundry.identity.uaa.login.LdapAuthHelper" />
-
+	<bean id="remoteRestTemplate"
+		class="org.springframework.security.oauth2.client.OAuth2RestTemplate">
+		<constructor-arg ref="uaa" />
+	</bean>
 	<bean id="remoteAuthenticationManager"
 		class="org.cloudfoundry.identity.uaa.login.RemoteUaaAuthenticationManager">
 		<constructor-arg ref="ldapAuthHelper" />
-		<property name="restTemplate">
-			<bean class="org.springframework.security.oauth2.client.OAuth2RestTemplate">
-				<constructor-arg ref="uaa" />
-			</bean>
-		</property>
+		<constructor-arg ref="remoteRestTemplate"/>
 		<property name="scimUrl"
 			value="${uaa.scim.url:http://localhost:8080/uaa/Users}" />
 		<property name="loginUrl"
