@@ -55,7 +55,7 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 
 	private final Log logger = LogFactory.getLog(getClass());
 
-	private RestOperations restTemplate = new RestTemplate();
+	private RestOperations restTemplate;
 
 	private static String DEFAULT_LOGIN_URL = "http://uaa.cloudfoundry.com/authenticate";
 
@@ -69,7 +69,7 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 
 	private LdapAuthHelper ldapAuthHelper;
 
-	public RemoteUaaAuthenticationManager(LdapAuthHelper ldapAuthHelper, RestTemplate restTemplate) {
+	public RemoteUaaAuthenticationManager(LdapAuthHelper ldapAuthHelper) {
 		super();
 		this.ldapAuthHelper = ldapAuthHelper;
 //		RestTemplate restTemplate = new RestTemplate();
@@ -81,7 +81,7 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 //				return statusCode.series() == HttpStatus.Series.SERVER_ERROR;
 //			}
 //		});
-		this.restTemplate = restTemplate;
+//		this.restTemplate = restTemplate;
 	}
 
 	/**
