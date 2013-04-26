@@ -13,14 +13,16 @@
 
 package org.cloudfoundry.identity.uaa.login;
 
-import java.util.ArrayList;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
-import java.util.List;
+import java.util.Date;
 import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.cloudfoundry.identity.uaa.message.PasswordChangeRequest;
+import org.cloudfoundry.identity.uaa.scim.ScimMeta;
 import org.cloudfoundry.identity.uaa.scim.ScimUser;
 import org.cloudfoundry.identity.uaa.user.UaaAuthority;
 import org.springframework.http.HttpEntity;
@@ -30,8 +32,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-import org.springframework.http.converter.HttpMessageConverter;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -191,9 +191,23 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 
 			ScimUser user = new ScimUser();
 			user.setUserName(username);
-			user.setName(new ScimUser.Name(username, ""));
+			user.setName(new ScimUser.Name(username, " "));
 			user.addEmail(username);
-			// user.setUserType(UaaAuthority.UAA_USER.getUserType());
+			user.setPassword(password);
+			user.setUserType(UaaAuthority.UAA_USER.getUserType());
+			ScimMeta meta = new ScimMeta();
+			Date now = null;
+			SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+			try {
+				now = dateFormat.parse(dateFormat.format(new Date()));
+			} catch (ParseException e) {
+				logger.error("Date format failed");
+				e.printStackTrace();
+			}
+			meta.setCreated(now);
+			meta.setLastModified(now);
+			user.setActive(true);
+			user.setMeta(meta);
 
 			ResponseEntity<ScimUser> userResponse = scimTemplate.postForEntity(
 					scimUrl, user, ScimUser.class);
