@@ -59,6 +59,8 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 	private final Log logger = LogFactory.getLog(getClass());
 
 	private RestTemplate restTemplate;
+	
+	private RestTemplate scimTemplate;
 
 	private static String DEFAULT_LOGIN_URL = "http://uaa.cloudfoundry.com/authenticate";
 
@@ -72,15 +74,17 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 
 	private LdapAuthHelper ldapAuthHelper;
 
-	public RemoteUaaAuthenticationManager(LdapAuthHelper ldapAuthHelper, RestTemplate restTemplate) {
+	public RemoteUaaAuthenticationManager(LdapAuthHelper ldapAuthHelper, RestTemplate scimTemplate) {
 		super();
 		this.ldapAuthHelper = ldapAuthHelper;
-		this.restTemplate = restTemplate;
-//		RestTemplate restTemplate = new RestTemplate();
+		this.scimTemplate = scimTemplate;
+		
+		restTemplate = new RestTemplate();
 //		// The default java.net client doesn't allow you to handle 4xx responses
-		List<HttpMessageConverter<?>> list = new ArrayList<HttpMessageConverter<?>>();
-		list.add(new MappingJackson2HttpMessageConverter());
-		restTemplate.setMessageConverters(list);
+//		List<HttpMessageConverter<?>> list = new ArrayList<HttpMessageConverter<?>>();
+//		list.add(new MappingJackson2HttpMessageConverter());
+//		list.addAll(new RestTemplate().getMessageConverters());
+//		restTemplate.setMessageConverters(list);
 		
 		restTemplate
 				.setRequestFactory(new HttpComponentsClientHttpRequestFactory());
@@ -167,7 +171,7 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 						UaaAuthority.USER_AUTHORITIES);
 			}
 		} else if (response.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-			logger.info("Cannot authenticate for LDAP is not created, and create it now");
+			logger.info("Cannot authenticate for LDAP account. Now create the account via scim");
 
 //			logger.info("Login as admin");
 //			parameters.set("username", "admin3");
@@ -191,7 +195,7 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 			user.addEmail(username);
 			// user.setUserType(UaaAuthority.UAA_USER.getUserType());
 
-			ResponseEntity<ScimUser> userResponse = restTemplate.postForEntity(
+			ResponseEntity<ScimUser> userResponse = scimTemplate.postForEntity(
 					scimUrl, user, ScimUser.class);
 
 			ScimUser newUser = userResponse.getBody();
