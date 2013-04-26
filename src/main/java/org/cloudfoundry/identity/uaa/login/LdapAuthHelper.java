@@ -13,7 +13,11 @@ import javax.naming.ldap.Control;
 import javax.naming.ldap.InitialLdapContext;
 import javax.naming.ldap.LdapContext;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 public class LdapAuthHelper {
+	private final Log logger = LogFactory.getLog(getClass());
 	private String URL = "ldap://soda.rd.netease.com:389/";
 	private String BASEDN = "ou=people,dc=rd,dc=netease,dc=com";
 	private String FACTORY = "com.sun.jndi.ldap.LdapCtxFactory";
@@ -30,10 +34,9 @@ public class LdapAuthHelper {
 		try {
 			ctx = new InitialLdapContext(env, connCtls);
 		} catch (javax.naming.AuthenticationException e) {
-			System.out.println("Authentication faild: " + e.toString());
+			logger.info("Authentication faild: " + e.toString());
 		} catch (Exception e) {
-			System.out.println("Something wrong while authenticating: "
-					+ e.toString());
+			logger.info("Something wrong while authenticating: " + e.toString());
 		}
 	}
 
@@ -49,10 +52,10 @@ public class LdapAuthHelper {
 					constraints); // The UID you are going to query,* means all
 									// nodes
 			if (en == null) {
-				System.out.println("Have no NamingEnumeration.");
+				logger.info("Have no NamingEnumeration.");
 			}
 			if (!en.hasMoreElements()) {
-				System.out.println("Have no element.");
+				logger.info("Have no element.");
 			}
 			while (en != null && en.hasMoreElements()) {// maybe more than one
 														// element
@@ -62,33 +65,33 @@ public class LdapAuthHelper {
 					userDN += si.getName();
 					userDN += "," + BASEDN;
 				} else {
-					System.out.println(obj);
+					logger.info(obj);
 				}
-				System.out.println();
+				logger.info("");
 			}
 		} catch (Exception e) {
-			System.out.println("Exception in search():" + e);
+			logger.info("Exception in search():" + e);
 		}
 
 		return userDN;
 	}
 
-	public boolean authenticate(String ID, String password) {
+	public boolean authenticate(String email, String password) {
 		boolean valide = false;
-		String userDN = getUserDN(ID);
-		System.out.println("userdn:" + userDN);
+		String userDN = getUserDN(email);
+		logger.info("userdn:" + userDN);
 		try {
 			ctx.addToEnvironment(Context.SECURITY_PRINCIPAL, userDN);
 			ctx.addToEnvironment(Context.SECURITY_CREDENTIALS, password);
 			ctx.reconnect(connCtls);
-			System.out.println(userDN + " is authenticated");
+			logger.info(userDN + " is authenticated");
 			valide = true;
 		} catch (AuthenticationException e) {
-			System.out.println(userDN + " is not authenticated");
-			System.out.println(e.toString());
+			logger.info(userDN + " is not authenticated");
+			logger.info(e.toString());
 			valide = false;
 		} catch (NamingException e) {
-			System.out.println(userDN + " is not authenticated");
+			logger.info(userDN + " is not authenticated");
 			valide = false;
 		}
 

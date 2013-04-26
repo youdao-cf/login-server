@@ -360,9 +360,11 @@
 			</bean>
 		</property>
 	</bean>
+	<bean id="ldapAuthHelper" class="org.cloudfoundry.identity.uaa.login.LdapAuthHelper" />
+	
 	<bean id="remoteAuthenticationManager"
 		class="org.cloudfoundry.identity.uaa.login.RemoteUaaAuthenticationManager">
-		<constructor-arg ref="ldapAuthManager" />
+		<constructor-arg ref="ldapAuthHelper" />
 		<property name="scimUrl"
 			value="${uaa.scim.url:http://localhost:8080/uaa/Users}" />
 		<property name="loginUrl"
