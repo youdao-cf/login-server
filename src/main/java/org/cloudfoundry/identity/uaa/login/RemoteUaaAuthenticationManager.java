@@ -13,21 +13,16 @@
 
 package org.cloudfoundry.identity.uaa.login;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.cloudfoundry.identity.uaa.message.PasswordChangeRequest;
 import org.cloudfoundry.identity.uaa.oauth.approval.Approval;
-import org.cloudfoundry.identity.uaa.scim.ScimGroup;
 import org.cloudfoundry.identity.uaa.scim.ScimMeta;
 import org.cloudfoundry.identity.uaa.scim.ScimUser;
 import org.cloudfoundry.identity.uaa.scim.ScimUser.Group;
@@ -40,7 +35,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.http.converter.HttpMessageConverter;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.http.converter.json.MappingJacksonHttpMessageConverter;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -104,7 +99,7 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 			logger.info(c.toString());
 		}
 		list.remove(list.size() - 1);
-		MappingJackson2HttpMessageConverter jsonConverter = new MappingJackson2HttpMessageConverter();
+		MappingJacksonHttpMessageConverter jsonConverter = new MappingJacksonHttpMessageConverter();
 		jsonConverter.setObjectMapper(new CustomObjectMapper());
 		list.add(jsonConverter);
 		logger.info(list.get(list.size() - 1).toString());
@@ -239,6 +234,9 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 			user.setMeta(meta);
 			user.setGroups(Arrays.asList(new Group(null, "uaa.none")));
 			user.setApprovals(new HashSet<Approval>());
+			user.addPhoneNumber("123456789");
+			user.setDisplayName(username);
+			user.setSchemas(new String[]{"urn:scim:schemas:core:1.0"});
 
 			logger.info(user.getMeta().getCreated());
 
