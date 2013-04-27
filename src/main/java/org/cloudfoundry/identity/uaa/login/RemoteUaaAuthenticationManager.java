@@ -200,21 +200,16 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 			logger.debug("6. Get all ScimGroups");
 			ResponseEntity<SearchResults> groupsResult = scimTemplate
 					.getForEntity(baseUrl + "Groups", SearchResults.class);
-			SearchResults<ScimGroup> groups = groupsResult.getBody();
+			SearchResults groups = groupsResult.getBody();
 			ScimGroup ccGroup = null;
-			if (groups.getResources() instanceof Map) {
-				Map<String, Object> map = (Map<String, Object>) groups
-						.getResources();
+			List<Map<String, Object>> list = (List<Map<String, Object>>) groups
+					.getResources();
+
+			for (Map<String, Object> map : list) {
+				logger.debug("-----");
 				for (String key : map.keySet()) {
 					ScimGroup group = (ScimGroup) map.get(key);
 					logger.debug(key + " : " + group.getDisplayName());
-					if (group.getDisplayName().equals(TARGET_GROUP)) {
-						ccGroup = group;
-					}
-				}
-			} else {
-				List<ScimGroup> list = (List<ScimGroup>) groups.getResources();
-				for (ScimGroup group : list) {
 					if (group.getDisplayName().equals(TARGET_GROUP)) {
 						ccGroup = group;
 					}
