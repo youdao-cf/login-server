@@ -232,8 +232,14 @@
 		<mvc:message-converters>
 			<bean
 				class="org.cloudfoundry.identity.uaa.login.AutologinController.AutologinRequestConverter" />
+			<bean
+				class="org.springframework.http.converter.json.MappingJacksonHttpMessageConverter">
+				<property name="objectMapper" ref="customObjectMapper" />
+			</bean>
 		</mvc:message-converters>
 	</mvc:annotation-driven>
+
+	<bean id="customObjectMapper" class="org.cloudfoundry.identity.uaa.login.CustomObjectMapper" />
 
 	<mvc:interceptors>
 		<bean class="org.cloudfoundry.identity.uaa.login.AnalyticsInterceptor">
@@ -376,6 +382,11 @@
 			value="${uaa.login.url:http://localhost:8080/uaa/authenticate}" />
 	</bean>
 
+	<!-- <bean id="jsonConverter"
+		class="org.springframework.http.converter.json.MappingJacksonHttpMessageConverter">
+		<property name="supportedMediaTypes" value="application/json" />
+		<property name="objectMapper" ref="jacksonObjectMapper" />
+	</bean>
 	<bean id="jacksonObjectMapper" class="org.codehaus.jackson.map.ObjectMapper" />
 	<bean id="jacksonSerializationConfig" class="org.codehaus.jackson.map.SerializationConfig"
 		factory-bean="jacksonObjectMapper" factory-method="getSerializationConfig" />
@@ -388,7 +399,7 @@
 				<value type="org.codehaus.jackson.map.SerializationConfig.Feature">WRITE_DATES_AS_TIMESTAMPS</value>
 			</list>
 		</property>
-	</bean>
+	</bean> -->
 
 	<bean
 		class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
