@@ -232,14 +232,14 @@
 		<mvc:message-converters>
 			<bean
 				class="org.cloudfoundry.identity.uaa.login.AutologinController.AutologinRequestConverter" />
-			<bean
+			<!-- <bean
 				class="org.springframework.http.converter.json.MappingJacksonHttpMessageConverter">
-				<property name="objectMapper" ref="customObjectMapper" />
-			</bean>
+				<property name="objectMapper" ref="customObjectMapper" /> 
+			</bean>-->
 		</mvc:message-converters>
 	</mvc:annotation-driven>
 
-	<bean id="customObjectMapper" class="org.cloudfoundry.identity.uaa.login.CustomObjectMapper" />
+	<!-- <bean id="customObjectMapper" class="org.cloudfoundry.identity.uaa.login.CustomObjectMapper" /> -->
 
 	<mvc:interceptors>
 		<bean class="org.cloudfoundry.identity.uaa.login.AnalyticsInterceptor">
@@ -376,13 +376,14 @@
 		class="org.cloudfoundry.identity.uaa.login.RemoteUaaAuthenticationManager">
 		<constructor-arg ref="ldapAuthHelper" />
 		<constructor-arg ref="remoteRestTemplate" />
+		<constructor-arg ref="jsonConverter"/>
 		<property name="scimUrl"
 			value="${uaa.scim.url:http://localhost:8080/uaa/Users}" />
 		<property name="loginUrl"
 			value="${uaa.login.url:http://localhost:8080/uaa/authenticate}" />
 	</bean>
 
-	<!-- <bean id="jsonConverter"
+	<bean id="jsonConverter"
 		class="org.springframework.http.converter.json.MappingJacksonHttpMessageConverter">
 		<property name="supportedMediaTypes" value="application/json" />
 		<property name="objectMapper" ref="jacksonObjectMapper" />
@@ -412,7 +413,7 @@
 				</bean>
 			</list>
 		</property>
-	</bean>-->
+	</bean>
 
 	<!--beans profile="ldap"> <sec:authentication-manager alias="ldapAuthenticationManager"> 
 		<sec:authentication-provider ref="ldapAuthProvider" /> </sec:authentication-manager> 

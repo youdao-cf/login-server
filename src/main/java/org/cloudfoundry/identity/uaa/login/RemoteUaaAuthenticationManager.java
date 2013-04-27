@@ -17,6 +17,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.logging.Log;
@@ -32,6 +33,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -74,7 +76,7 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 
 	private LdapAuthHelper ldapAuthHelper;
 
-	public RemoteUaaAuthenticationManager(LdapAuthHelper ldapAuthHelper, RestTemplate scimTemplate) {
+	public RemoteUaaAuthenticationManager(LdapAuthHelper ldapAuthHelper, RestTemplate scimTemplate, HttpMessageConverter<?> jsonConverter) {
 		super();
 		this.ldapAuthHelper = ldapAuthHelper;
 		this.scimTemplate = scimTemplate;
@@ -85,6 +87,22 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 //		list.add(new MappingJackson2HttpMessageConverter());
 //		list.addAll(new RestTemplate().getMessageConverters());
 //		restTemplate.setMessageConverters(list);
+		List<HttpMessageConverter<?>> list = scimTemplate.getMessageConverters();
+		logger.info("-------------");
+		for (HttpMessageConverter<?> c : list) {
+			logger.info(c.getClass().toString());
+		}
+		list.add(jsonConverter);
+		logger.info("-------------");
+		for (HttpMessageConverter<?> c : list) {
+			logger.info(c.getClass().toString());
+		}
+		logger.info("-------------");
+		scimTemplate.setErrorHandler(new DefaultResponseErrorHandler() {
+			protected boolean hasError(HttpStatus statusCode) {
+				return statusCode.series() == HttpStatus.Series.SERVER_ERROR;
+			}
+		});
 		
 		restTemplate
 				.setRequestFactory(new HttpComponentsClientHttpRequestFactory());
