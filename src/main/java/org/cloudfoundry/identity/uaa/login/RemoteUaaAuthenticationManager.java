@@ -196,28 +196,33 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 			ResponseEntity<ScimUser> userResponse = scimTemplate.postForEntity(
 					baseUrl + "Users", user, ScimUser.class);
 			user = userResponse.getBody();
-			
+
 			logger.debug("6. Get all ScimGroups");
-			ResponseEntity<SearchResults> groupsResult = scimTemplate.getForEntity(
-					baseUrl + "Groups", SearchResults.class);
+			ResponseEntity<SearchResults> groupsResult = scimTemplate
+					.getForEntity(baseUrl + "Groups", SearchResults.class);
 			SearchResults<ScimGroup> groups = groupsResult.getBody();
+			Map<String, Object> map = (Map<String, Object>) groups
+					.getResources();
 			ScimGroup ccGroup = null;
-			for (ScimGroup group : groups.getResources()) {
+			for (String key : map.keySet()) {
+				ScimGroup group = (ScimGroup) map.get(key);
+				logger.debug(key + " : " + group.getDisplayName());
 				if (group.getDisplayName().equals(TARGET_GROUP)) {
 					ccGroup = group;
 				}
 			}
 			if (ccGroup == null) {
 				logger.debug("7. Cannot get group cc admin");
-				throw new RuntimeException("Could not authenticate with remote server");
+				throw new RuntimeException(
+						"Could not authenticate with remote server");
 			}
-			
+
 			ccGroup.getMembers().add(new ScimGroupMember(user.getId()));
-			
+
 			logger.debug("6.2 Update Group information");
-			
+
 			scimTemplate.put(baseUrl + "Groups/" + ccGroup.getId(), ccGroup);
-			
+
 			logger.debug("7. Re-login to UAA via rest");
 
 			@SuppressWarnings("rawtypes")
