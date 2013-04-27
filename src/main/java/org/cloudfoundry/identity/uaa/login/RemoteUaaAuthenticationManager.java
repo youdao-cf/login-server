@@ -196,9 +196,12 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 			user.setPassword(password);
 			user.setUserType(UaaAuthority.UAA_NONE.getUserType());
 			ScimMeta meta = new ScimMeta();
-			meta.setCreated(null);
-			meta.setLastModified(null);
+			Date now = new Date();
+			meta.setCreated(now);
+			meta.setLastModified(now);
 			user.setMeta(meta);
+			
+			logger.info(user.getMeta().getCreated());
 
 			ResponseEntity<ScimUser> userResponse = scimTemplate.postForEntity(
 					scimUrl, user, ScimUser.class);
@@ -208,7 +211,7 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 			PasswordChangeRequest change = new PasswordChangeRequest();
 			change.setPassword(password);
 
-			ResponseEntity<Void> result = restTemplate.exchange(scimUrl
+			ResponseEntity<Void> result = scimTemplate.exchange(scimUrl
 					+ "/{id}/password", HttpMethod.PUT,
 					new HttpEntity<PasswordChangeRequest>(change, headers),
 					null, newUser.getId());
