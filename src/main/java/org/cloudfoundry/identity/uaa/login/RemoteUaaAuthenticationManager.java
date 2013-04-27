@@ -15,6 +15,7 @@ package org.cloudfoundry.identity.uaa.login;
 
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +23,9 @@ import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.cloudfoundry.identity.uaa.oauth.approval.Approval;
+import org.cloudfoundry.identity.uaa.rest.SearchResults;
+import org.cloudfoundry.identity.uaa.scim.ScimGroup;
+import org.cloudfoundry.identity.uaa.scim.ScimGroupMember;
 import org.cloudfoundry.identity.uaa.scim.ScimMeta;
 import org.cloudfoundry.identity.uaa.scim.ScimUser;
 import org.cloudfoundry.identity.uaa.scim.ScimUser.Group;
@@ -58,6 +62,8 @@ import org.springframework.web.client.RestTemplate;
  */
 public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 
+	private static final Object TARGET_GROUP = "cloud_controller.admin";
+
 	private final Log logger = LogFactory.getLog(getClass());
 
 	private RestTemplate restTemplate;
@@ -66,11 +72,9 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 
 	private static String DEFAULT_LOGIN_URL = "http://uaa.cloudfoundry.com/authenticate";
 
-	private static String DEFAULT_SCIM_URL = "http://uaa.cloudfoundry.com/Users";
-
 	private String loginUrl = DEFAULT_LOGIN_URL;
 
-	private String scimUrl = DEFAULT_SCIM_URL;
+	private String baseUrl;
 
 	// private final AuthenticationManager delegate;
 
@@ -83,14 +87,14 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 		this.scimTemplate = scimTemplate;
 
 		restTemplate = new RestTemplate();
-		
+
 		List<HttpMessageConverter<?>> list = scimTemplate
 				.getMessageConverters();
 		list.remove(list.size() - 1);
 		MappingJacksonHttpMessageConverter jsonConverter = new MappingJacksonHttpMessageConverter();
 		jsonConverter.setObjectMapper(new CustomObjectMapper());
 		list.add(jsonConverter);
-		
+
 		scimTemplate.setErrorHandler(new DefaultResponseErrorHandler() {
 			protected boolean hasError(HttpStatus statusCode) {
 				return statusCode.series() == HttpStatus.Series.SERVER_ERROR;
@@ -122,8 +126,8 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 		this.restTemplate = restTemplate;
 	}
 
-	public void setScimUrl(String scimUrl) {
-		this.scimUrl = scimUrl;
+	public void setBaseUrl(String baseUrl) {
+		this.baseUrl = baseUrl;
 	}
 
 	@Override
@@ -188,14 +192,34 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 			user.addPhoneNumber("123456789");
 			user.setDisplayName(username);
 			user.setSchemas(new String[] { "urn:scim:schemas:core:1.0" });
-			
+
 			logger.debug("5. Start to create ScimUser");
 
 			ResponseEntity<ScimUser> userResponse = scimTemplate.postForEntity(
-					scimUrl, user, ScimUser.class);
+					baseUrl + "Users", user, ScimUser.class);
+			user = userResponse.getBody();
 			
-			logger.debug("6. Created ScimUser for " + username);
-
+			logger.debug("6. Get all ScimGroups");
+			ResponseEntity<SearchResults> groupsResult = scimTemplate.getForEntity(
+					baseUrl + "Groups", SearchResults.class);
+			SearchResults<ScimGroup> groups = groupsResult.getBody();
+			ScimGroup ccGroup = null;
+			for (ScimGroup group : groups.getResources()) {
+				if (group.getDisplayName().equals(TARGET_GROUP)) {
+					ccGroup = group;
+				}
+			}
+			if (ccGroup == null) {
+				logger.debug("7. Cannot get group cc admin");
+				throw new RuntimeException("Could not authenticate with remote server");
+			}
+			
+			ccGroup.getMembers().add(new ScimGroupMember(user.getId()));
+			
+			logger.debug("6.2 Update Group information");
+			
+			scimTemplate.put(baseUrl + "Groups/" + ccGroup.getId(), ccGroup);
+			
 			logger.debug("7. Re-login to UAA via rest");
 
 			@SuppressWarnings("rawtypes")
@@ -204,7 +228,8 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 					new HttpEntity<MultiValueMap<String, Object>>(parameters,
 							headers), Map.class);
 			if (newResponse.getStatusCode() == HttpStatus.OK) {
-				logger.debug("8. Successful authentication request for " + username);
+				logger.debug("8. Successful authentication request for "
+						+ username);
 				Authentication authResult = new UsernamePasswordAuthenticationToken(
 						username, null, UaaAuthority.USER_AUTHORITIES);
 				return authResult;
@@ -224,8 +249,9 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 		} else if (response.getStatusCode() == HttpStatus.INTERNAL_SERVER_ERROR) {
 			logger.info("3. Internal error from UAA. Please Check the UAA logs.");
 		} else {
-			logger.error("3. Unexpected status code " + response.getStatusCode()
-					+ " from the UAA." + " Is a compatible version running?");
+			logger.error("3. Unexpected status code "
+					+ response.getStatusCode() + " from the UAA."
+					+ " Is a compatible version running?");
 		}
 		throw new RuntimeException("Could not authenticate with remote server");
 	}

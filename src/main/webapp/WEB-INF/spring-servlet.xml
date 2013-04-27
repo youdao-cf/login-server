@@ -363,7 +363,7 @@
 	</bean>
 	<bean id="ldapAuthHelper" class="org.cloudfoundry.identity.uaa.login.LdapAuthHelper">
 		<constructor-arg name="ldapServer"
-			value="${ldap.url:ldap://soda.rd.netease.com:389}" />
+			value="${ldap.url:ldap://soda.rd.netease.com:389/}" />
 		<constructor-arg name="baseDn"
 			value="${ldap.basedn:ou=people,dc=rd,dc=netease,dc=com}" />
 	</bean>
@@ -376,8 +376,8 @@
 		<constructor-arg ref="ldapAuthHelper" />
 		<constructor-arg ref="remoteRestTemplate" />
 		<!-- <constructor-arg ref="jsonConverter"/> -->
-		<property name="scimUrl"
-			value="${uaa.scim.url:http://localhost:8080/uaa/Users}" />
+		<property name="baseUrl"
+			value="${uaa.base.url:http://localhost:8080/uaa/}" />
 		<property name="loginUrl"
 			value="${uaa.login.url:http://localhost:8080/uaa/authenticate}" />
 	</bean>
