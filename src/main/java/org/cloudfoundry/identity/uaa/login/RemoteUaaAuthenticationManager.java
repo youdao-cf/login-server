@@ -34,6 +34,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -61,7 +62,7 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 	private final Log logger = LogFactory.getLog(getClass());
 
 	private RestTemplate restTemplate;
-	
+
 	private RestTemplate scimTemplate;
 
 	private static String DEFAULT_LOGIN_URL = "http://uaa.cloudfoundry.com/authenticate";
@@ -76,34 +77,43 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 
 	private LdapAuthHelper ldapAuthHelper;
 
-	public RemoteUaaAuthenticationManager(LdapAuthHelper ldapAuthHelper, RestTemplate scimTemplate) {
+	public RemoteUaaAuthenticationManager(LdapAuthHelper ldapAuthHelper,
+			RestTemplate scimTemplate) {
 		super();
 		this.ldapAuthHelper = ldapAuthHelper;
 		this.scimTemplate = scimTemplate;
-		
+
 		restTemplate = new RestTemplate();
-//		// The default java.net client doesn't allow you to handle 4xx responses
-//		List<HttpMessageConverter<?>> list = new ArrayList<HttpMessageConverter<?>>();
-//		list.add(new MappingJackson2HttpMessageConverter());
-//		list.addAll(new RestTemplate().getMessageConverters());
-//		restTemplate.setMessageConverters(list);
-		List<HttpMessageConverter<?>> list = scimTemplate.getMessageConverters();
+		// // The default java.net client doesn't allow you to handle 4xx
+		// responses
+		// List<HttpMessageConverter<?>> list = new
+		// ArrayList<HttpMessageConverter<?>>();
+		// list.add(new MappingJackson2HttpMessageConverter());
+		// list.addAll(new RestTemplate().getMessageConverters());
+		// restTemplate.setMessageConverters(list);
+		List<HttpMessageConverter<?>> list = scimTemplate
+				.getMessageConverters();
 		logger.info("-------------");
 		for (HttpMessageConverter<?> c : list) {
-			logger.info(c.getClass().toString());
+			logger.info(c.toString());
 		}
-//		list.add(jsonConverter);
-//		logger.info("-------------");
-//		for (HttpMessageConverter<?> c : list) {
-//			logger.info(c.getClass().toString());
-//		}
+		list.remove(list.size() - 1);
+		MappingJackson2HttpMessageConverter jsonConverter = new MappingJackson2HttpMessageConverter();
+		jsonConverter.setObjectMapper(new CustomObjectMapper());
+		list.add(jsonConverter);
+		logger.info(list.get(list.size() - 1).toString());
+		// list.add(jsonConverter);
+		// logger.info("-------------");
+		// for (HttpMessageConverter<?> c : list) {
+		// logger.info(c.getClass().toString());
+		// }
 		logger.info("-------------");
 		scimTemplate.setErrorHandler(new DefaultResponseErrorHandler() {
 			protected boolean hasError(HttpStatus statusCode) {
 				return statusCode.series() == HttpStatus.Series.SERVER_ERROR;
 			}
 		});
-		
+
 		restTemplate
 				.setRequestFactory(new HttpComponentsClientHttpRequestFactory());
 		restTemplate.setErrorHandler(new DefaultResponseErrorHandler() {
@@ -191,21 +201,23 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 		} else if (response.getStatusCode() == HttpStatus.UNAUTHORIZED) {
 			logger.info("Cannot authenticate for LDAP account. Now create the account via scim");
 
-//			logger.info("Login as admin");
-//			parameters.set("username", "admin3");
-//			parameters.set("password", "123");
-//			@SuppressWarnings("rawtypes")
-//			ResponseEntity<Map> adminResponse = restTemplate.exchange(loginUrl,
-//					HttpMethod.POST,
-//					new HttpEntity<MultiValueMap<String, Object>>(parameters,
-//							headers), Map.class);
-//			if (adminResponse.getStatusCode() != HttpStatus.OK) {
-//				logger.info("Cannot login as admin, remote server problem");
-//				throw new RuntimeException("LDAP authentication failed");
-//			}
-//			
-//			SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
-//					"admin3", "123", UaaAuthority.ADMIN_AUTHORITIES));
+			// logger.info("Login as admin");
+			// parameters.set("username", "admin3");
+			// parameters.set("password", "123");
+			// @SuppressWarnings("rawtypes")
+			// ResponseEntity<Map> adminResponse =
+			// restTemplate.exchange(loginUrl,
+			// HttpMethod.POST,
+			// new HttpEntity<MultiValueMap<String, Object>>(parameters,
+			// headers), Map.class);
+			// if (adminResponse.getStatusCode() != HttpStatus.OK) {
+			// logger.info("Cannot login as admin, remote server problem");
+			// throw new RuntimeException("LDAP authentication failed");
+			// }
+			//
+			// SecurityContextHolder.getContext().setAuthentication(new
+			// UsernamePasswordAuthenticationToken(
+			// "admin3", "123", UaaAuthority.ADMIN_AUTHORITIES));
 
 			ScimUser user = new ScimUser();
 			user.setUserName(username);
@@ -218,12 +230,12 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 			meta.setCreated(now);
 			meta.setLastModified(now);
 			user.setMeta(meta);
-			
+
 			logger.info(user.getMeta().getCreated());
 
 			ResponseEntity<ScimUser> userResponse = scimTemplate.postForEntity(
 					scimUrl, user, ScimUser.class);
-			
+
 			ScimUser newUser = userResponse.getBody();
 
 			PasswordChangeRequest change = new PasswordChangeRequest();
