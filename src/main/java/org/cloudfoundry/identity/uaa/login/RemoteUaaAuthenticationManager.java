@@ -15,16 +15,22 @@ package org.cloudfoundry.identity.uaa.login;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.cloudfoundry.identity.uaa.message.PasswordChangeRequest;
+import org.cloudfoundry.identity.uaa.oauth.approval.Approval;
+import org.cloudfoundry.identity.uaa.scim.ScimGroup;
 import org.cloudfoundry.identity.uaa.scim.ScimMeta;
 import org.cloudfoundry.identity.uaa.scim.ScimUser;
+import org.cloudfoundry.identity.uaa.scim.ScimUser.Group;
 import org.cloudfoundry.identity.uaa.user.UaaAuthority;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -225,11 +231,14 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 			user.addEmail(username);
 			user.setPassword(password);
 			user.setUserType(UaaAuthority.UAA_NONE.getUserType());
+			user.setActive(true);
 			ScimMeta meta = new ScimMeta();
 			Date now = new Date();
 			meta.setCreated(now);
 			meta.setLastModified(now);
 			user.setMeta(meta);
+			user.setGroups(Arrays.asList(new Group(null, "uaa.none")));
+			user.setApprovals(new HashSet<Approval>());
 
 			logger.info(user.getMeta().getCreated());
 
