@@ -24,6 +24,11 @@ public class LdapAuthHelper {
 	private LdapContext ctx = null;
 	private Hashtable<String, String> env = null;
 	private Control[] connCtls = null;
+	
+	public LdapAuthHelper(String ldapServer, String baseDn) {
+		this.URL = ldapServer;
+		this.BASEDN = baseDn;
+	}
 
 	private void LDAP_connect() {
 		env = new Hashtable<String, String>();
