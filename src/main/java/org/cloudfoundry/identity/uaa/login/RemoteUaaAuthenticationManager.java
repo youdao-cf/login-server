@@ -21,7 +21,6 @@ import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.cloudfoundry.identity.uaa.message.PasswordChangeRequest;
 import org.cloudfoundry.identity.uaa.oauth.approval.Approval;
 import org.cloudfoundry.identity.uaa.scim.ScimMeta;
 import org.cloudfoundry.identity.uaa.scim.ScimUser;
@@ -41,7 +40,6 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.DefaultResponseErrorHandler;
@@ -85,30 +83,14 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 		this.scimTemplate = scimTemplate;
 
 		restTemplate = new RestTemplate();
-		// // The default java.net client doesn't allow you to handle 4xx
-		// responses
-		// List<HttpMessageConverter<?>> list = new
-		// ArrayList<HttpMessageConverter<?>>();
-		// list.add(new MappingJackson2HttpMessageConverter());
-		// list.addAll(new RestTemplate().getMessageConverters());
-		// restTemplate.setMessageConverters(list);
+		
 		List<HttpMessageConverter<?>> list = scimTemplate
 				.getMessageConverters();
-		logger.info("-------------");
-		for (HttpMessageConverter<?> c : list) {
-			logger.info(c.toString());
-		}
 		list.remove(list.size() - 1);
 		MappingJacksonHttpMessageConverter jsonConverter = new MappingJacksonHttpMessageConverter();
 		jsonConverter.setObjectMapper(new CustomObjectMapper());
 		list.add(jsonConverter);
-		logger.info(list.get(list.size() - 1).toString());
-		// list.add(jsonConverter);
-		// logger.info("-------------");
-		// for (HttpMessageConverter<?> c : list) {
-		// logger.info(c.getClass().toString());
-		// }
-		logger.info("-------------");
+		
 		scimTemplate.setErrorHandler(new DefaultResponseErrorHandler() {
 			protected boolean hasError(HttpStatus statusCode) {
 				return statusCode.series() == HttpStatus.Series.SERVER_ERROR;
@@ -147,37 +129,13 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 	@Override
 	public Authentication authenticate(Authentication authentication)
 			throws AuthenticationException {
-
-		// if (authentication == null
-		// || authentication instanceof UsernamePasswordAuthenticationToken) {
-		// return authentication;
-		// }
-		//
-		// UsernamePasswordAuthenticationToken output = new
-		// UsernamePasswordAuthenticationToken(
-		// authentication, authentication.getCredentials(),
-		// authentication.getAuthorities());
-		// output.setAuthenticated(authentication.isAuthenticated());
-		// output.setDetails(authentication.getDetails());
-		//
-		// Authentication ldapResult = null;
-		// try {
-		// ldapResult = delegate.authenticate(output);
-		// } catch (AuthenticationException e) {
-		// throw new BadCredentialsException("LDAP authentication failed");
-		// }
+		logger.debug("---------------------------------------------------------------");
 
 		String username = authentication.getName();
 		String password = (String) authentication.getCredentials();
 
-		boolean ldapAuthResult = ldapAuthHelper
-				.authenticate(username, password);
-
-		if (!ldapAuthResult) {
-			throw new BadCredentialsException("LDAP authentication failed");
-		}
-
-		logger.debug("Ldap auth successfuly with " + username + ", " + password);
+		logger.debug("1. Get username and password " + username + "/"
+				+ password);
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
@@ -187,38 +145,31 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 		parameters.set("username", username);
 		parameters.set("password", password);
 
+		logger.debug("2. Start auth to uaa");
+
 		@SuppressWarnings("rawtypes")
 		ResponseEntity<Map> response = restTemplate.exchange(loginUrl,
 				HttpMethod.POST, new HttpEntity<MultiValueMap<String, Object>>(
 						parameters, headers), Map.class);
 
 		if (response.getStatusCode() == HttpStatus.OK) {
-			String userFromUaa = (String) response.getBody().get("username");
-			if (userFromUaa.equals(userFromUaa)) {
-				logger.info("Successful authentication request for " + username);
-				return new UsernamePasswordAuthenticationToken(username, null,
-						UaaAuthority.USER_AUTHORITIES);
-			}
-		} else if (response.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-			logger.info("Cannot authenticate for LDAP account. Now create the account via scim");
+			logger.info("3. Successful authentication request for " + username);
+			return new UsernamePasswordAuthenticationToken(username, null,
+					UaaAuthority.USER_AUTHORITIES);
 
-			// logger.info("Login as admin");
-			// parameters.set("username", "admin3");
-			// parameters.set("password", "123");
-			// @SuppressWarnings("rawtypes")
-			// ResponseEntity<Map> adminResponse =
-			// restTemplate.exchange(loginUrl,
-			// HttpMethod.POST,
-			// new HttpEntity<MultiValueMap<String, Object>>(parameters,
-			// headers), Map.class);
-			// if (adminResponse.getStatusCode() != HttpStatus.OK) {
-			// logger.info("Cannot login as admin, remote server problem");
-			// throw new RuntimeException("LDAP authentication failed");
-			// }
-			//
-			// SecurityContextHolder.getContext().setAuthentication(new
-			// UsernamePasswordAuthenticationToken(
-			// "admin3", "123", UaaAuthority.ADMIN_AUTHORITIES));
+		} else if (response.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+			logger.debug("3. Uaa auth failed. May first login or user error, try to login to LDAP to check username and password");
+
+			boolean ldapAuthResult = ldapAuthHelper.authenticate(username,
+					password);
+
+			if (!ldapAuthResult) {
+				logger.debug("4. Ldap auth failed with " + username + ", "
+						+ password);
+				throw new BadCredentialsException("LDAP authentication failed");
+			}
+
+			logger.debug("4. Ldap auth successfully. So create the cf account via scim");
 
 			ScimUser user = new ScimUser();
 			user.setUserName(username);
@@ -236,27 +187,16 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 			user.setApprovals(new HashSet<Approval>());
 			user.addPhoneNumber("123456789");
 			user.setDisplayName(username);
-			user.setSchemas(new String[]{"urn:scim:schemas:core:1.0"});
-
-			logger.info(user.getMeta().getCreated());
+			user.setSchemas(new String[] { "urn:scim:schemas:core:1.0" });
+			
+			logger.debug("5. Start to create ScimUser");
 
 			ResponseEntity<ScimUser> userResponse = scimTemplate.postForEntity(
 					scimUrl, user, ScimUser.class);
+			
+			logger.debug("6. Created ScimUser for " + username);
 
-//			ScimUser newUser = userResponse.getBody();
-
-//			PasswordChangeRequest change = new PasswordChangeRequest();
-//			change.setPassword(password);
-
-//			ResponseEntity<Void> result = scimTemplate.exchange(scimUrl
-//					+ "/{id}/password", HttpMethod.PUT,
-//					new HttpEntity<PasswordChangeRequest>(change, headers),
-//					null, newUser.getId());
-//			if (result.getStatusCode() != HttpStatus.OK) {
-//				throw new RuntimeException("Cannot create user in UAA");
-//			}
-
-			logger.debug("re-login to UAA via rest");
+			logger.debug("7. Re-login to UAA via rest");
 
 			@SuppressWarnings("rawtypes")
 			ResponseEntity<Map> newResponse = restTemplate.exchange(loginUrl,
@@ -264,33 +204,27 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 					new HttpEntity<MultiValueMap<String, Object>>(parameters,
 							headers), Map.class);
 			if (newResponse.getStatusCode() == HttpStatus.OK) {
-				String userFromUaa = (String) response.getBody()
-						.get("username");
-				if (userFromUaa.equals(userFromUaa)) {
-					logger.info("Successful authentication request for "
-							+ username);
-					Authentication authResult = new UsernamePasswordAuthenticationToken(
-							username, null, UaaAuthority.USER_AUTHORITIES);
-					SecurityContextHolder.getContext().setAuthentication(
-							authResult);
-					return authResult;
-				}
+				logger.debug("8. Successful authentication request for " + username);
+				Authentication authResult = new UsernamePasswordAuthenticationToken(
+						username, null, UaaAuthority.USER_AUTHORITIES);
+				return authResult;
+
 			} else if (response.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-				logger.info("Cannot get authentication");
+				logger.debug("8. Unauthorited via new user. This should not happen.");
 				throw new BadCredentialsException("Authentication failed");
 			} else if (response.getStatusCode() == HttpStatus.INTERNAL_SERVER_ERROR) {
-				logger.info("Internal error from UAA. Please Check the UAA logs.");
+				logger.info("8. Internal error from UAA. Please Check the UAA logs.");
 			} else {
-				logger.error("Unexpected status code "
+				logger.error("8. Unexpected status code "
 						+ response.getStatusCode() + " from the UAA."
 						+ " Is a compatible version running?");
 			}
 			throw new RuntimeException(
 					"Could not authenticate with remote server");
 		} else if (response.getStatusCode() == HttpStatus.INTERNAL_SERVER_ERROR) {
-			logger.info("Internal error from UAA. Please Check the UAA logs.");
+			logger.info("3. Internal error from UAA. Please Check the UAA logs.");
 		} else {
-			logger.error("Unexpected status code " + response.getStatusCode()
+			logger.error("3. Unexpected status code " + response.getStatusCode()
 					+ " from the UAA." + " Is a compatible version running?");
 		}
 		throw new RuntimeException("Could not authenticate with remote server");
