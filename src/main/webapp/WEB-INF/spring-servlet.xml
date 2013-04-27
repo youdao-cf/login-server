@@ -376,7 +376,7 @@
 		class="org.cloudfoundry.identity.uaa.login.RemoteUaaAuthenticationManager">
 		<constructor-arg ref="ldapAuthHelper" />
 		<constructor-arg ref="remoteRestTemplate" />
-		<constructor-arg ref="jsonConverter"/>
+		<!-- <constructor-arg ref="jsonConverter"/> -->
 		<property name="scimUrl"
 			value="${uaa.scim.url:http://localhost:8080/uaa/Users}" />
 		<property name="loginUrl"

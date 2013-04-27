@@ -76,7 +76,7 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 
 	private LdapAuthHelper ldapAuthHelper;
 
-	public RemoteUaaAuthenticationManager(LdapAuthHelper ldapAuthHelper, RestTemplate scimTemplate, HttpMessageConverter<?> jsonConverter) {
+	public RemoteUaaAuthenticationManager(LdapAuthHelper ldapAuthHelper, RestTemplate scimTemplate) {
 		super();
 		this.ldapAuthHelper = ldapAuthHelper;
 		this.scimTemplate = scimTemplate;
@@ -92,11 +92,11 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 		for (HttpMessageConverter<?> c : list) {
 			logger.info(c.getClass().toString());
 		}
-		list.add(jsonConverter);
-		logger.info("-------------");
-		for (HttpMessageConverter<?> c : list) {
-			logger.info(c.getClass().toString());
-		}
+//		list.add(jsonConverter);
+//		logger.info("-------------");
+//		for (HttpMessageConverter<?> c : list) {
+//			logger.info(c.getClass().toString());
+//		}
 		logger.info("-------------");
 		scimTemplate.setErrorHandler(new DefaultResponseErrorHandler() {
 			protected boolean hasError(HttpStatus statusCode) {
