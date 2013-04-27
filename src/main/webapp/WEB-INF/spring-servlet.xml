@@ -233,7 +233,7 @@
 			<bean
 				class="org.cloudfoundry.identity.uaa.login.AutologinController.AutologinRequestConverter" />
 			<bean
-				class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+				class="org.springframework.http.converter.json.MappingJacksonHttpMessageConverter">
 				<property name="objectMapper" ref="customObjectMapper" /> 
 			</bean>
 		</mvc:message-converters>

@@ -243,18 +243,18 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 			ResponseEntity<ScimUser> userResponse = scimTemplate.postForEntity(
 					scimUrl, user, ScimUser.class);
 
-			ScimUser newUser = userResponse.getBody();
+//			ScimUser newUser = userResponse.getBody();
 
-			PasswordChangeRequest change = new PasswordChangeRequest();
-			change.setPassword(password);
+//			PasswordChangeRequest change = new PasswordChangeRequest();
+//			change.setPassword(password);
 
-			ResponseEntity<Void> result = scimTemplate.exchange(scimUrl
-					+ "/{id}/password", HttpMethod.PUT,
-					new HttpEntity<PasswordChangeRequest>(change, headers),
-					null, newUser.getId());
-			if (result.getStatusCode() != HttpStatus.OK) {
-				throw new RuntimeException("Cannot create user in UAA");
-			}
+//			ResponseEntity<Void> result = scimTemplate.exchange(scimUrl
+//					+ "/{id}/password", HttpMethod.PUT,
+//					new HttpEntity<PasswordChangeRequest>(change, headers),
+//					null, newUser.getId());
+//			if (result.getStatusCode() != HttpStatus.OK) {
+//				throw new RuntimeException("Cannot create user in UAA");
+//			}
 
 			logger.debug("re-login to UAA via rest");
 
