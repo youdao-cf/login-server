@@ -322,45 +322,6 @@
 		<property name="links" ref="links" />
 	</bean>
 
-	<sec:authentication-manager alias="ldapAuthenticationManager">
-		<sec:authentication-provider ref="ldapAuthProvider" />
-	</sec:authentication-manager>
-
-	<bean id="ldapAuthManager"
-		class="org.cloudfoundry.identity.uaa.login.UsernamePasswordExtractingAuthenticationManager">
-		<constructor-arg ref="ldapAuthenticationManager" />
-	</bean>
-
-	<bean id="contextSource"
-		class="org.springframework.security.ldap.DefaultSpringSecurityContextSource">
-		<constructor-arg
-			value="${ldap.base.url:ldap://soda.rd.netease.com:389/dc=rd,dc=netease,dc=com}" />
-	</bean>
-
-	<bean id="ldapAuthProvider"
-		class="org.springframework.security.ldap.authentication.LdapAuthenticationProvider">
-		<constructor-arg>
-			<bean
-				class="org.springframework.security.ldap.authentication.BindAuthenticator">
-				<constructor-arg ref="contextSource" />
-				<property name="userDnPatterns">
-					<list>
-						<value>uid={0},ou=people</value>
-					</list>
-				</property>
-			</bean>
-		</constructor-arg>
-		<constructor-arg>
-			<bean
-				class="org.springframework.security.ldap.authentication.NullLdapAuthoritiesPopulator" />
-		</constructor-arg>
-		<property name="authoritiesMapper">
-			<bean
-				class="org.springframework.security.core.authority.mapping.SimpleAuthorityMapper">
-				<property name="defaultAuthority" value="ROLE_USER" />
-			</bean>
-		</property>
-	</bean>
 	<bean id="ldapAuthHelper" class="org.cloudfoundry.identity.uaa.login.LdapAuthHelper">
 		<constructor-arg name="ldapServer"
 			value="${ldap.url:ldap://soda.rd.netease.com:389/}" />
@@ -375,11 +336,7 @@
 		class="org.cloudfoundry.identity.uaa.login.RemoteUaaAuthenticationManager">
 		<constructor-arg ref="ldapAuthHelper" />
 		<constructor-arg ref="remoteRestTemplate" />
-		<!-- <constructor-arg ref="jsonConverter"/> -->
-		<property name="baseUrl"
-			value="${uaa.base.url:http://localhost:8080/uaa/}" />
-		<property name="loginUrl"
-			value="${uaa.login.url:http://localhost:8080/uaa/authenticate}" />
+		<property name="baseUrl" value="${uaa.base.url:http://localhost:8080/uaa/}" />
 	</bean>
 
 </beans>

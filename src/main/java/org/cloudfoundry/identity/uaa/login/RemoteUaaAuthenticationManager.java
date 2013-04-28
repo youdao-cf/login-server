@@ -62,17 +62,19 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 
 	private static final String TARGET_GROUP = "cloud_controller.admin";
 
+	private static final String[] SCIM_SCHEMAS = new String[] { "urn:scim:schemas:core:1.0" };
+
+	private static final String DEFAULT_PASSWORD = "";
+
+	private static final String DEFAULT_BASE_URL = "http://localhost:8080/uaa/";
+
 	private final Log logger = LogFactory.getLog(getClass());
 
 	private RestTemplate restTemplate;
 
 	private RestTemplate scimTemplate;
 
-	private static String DEFAULT_LOGIN_URL = "http://uaa.cloudfoundry.com/authenticate";
-
-	private String loginUrl = DEFAULT_LOGIN_URL;
-
-	private String baseUrl;
+	private String baseUrl = DEFAULT_BASE_URL;
 
 	// private final AuthenticationManager delegate;
 
@@ -109,14 +111,6 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 	}
 
 	/**
-	 * @param loginUrl
-	 *            the login url to set
-	 */
-	public void setLoginUrl(String loginUrl) {
-		this.loginUrl = loginUrl;
-	}
-
-	/**
 	 * @param restTemplate
 	 *            a rest template to use
 	 */
@@ -131,13 +125,26 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 	@Override
 	public Authentication authenticate(Authentication authentication)
 			throws AuthenticationException {
-		logger.debug("---------------------------------------------------------------");
+		if (authentication == null) {
+			logger.warn("Authentication is null, please check your input");
+			return null;
+		}
 
 		String username = authentication.getName();
 		String password = (String) authentication.getCredentials();
 
-		logger.debug("1. Get username and password " + username + "/"
-				+ password);
+		logger.debug("Get username and password " + username + "/" + password);
+
+		logger.debug("LDAP verifying....");
+
+		boolean ldapAuthResult = ldapAuthHelper
+				.authenticate(username, password);
+
+		if (!ldapAuthResult) {
+			logger.debug("Ldap auth failed with " + username + ", " + password);
+			throw new BadCredentialsException("LDAP authentication failed");
+		}
+		logger.debug("LDAP auth passed");
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
@@ -145,39 +152,35 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 
 		MultiValueMap<String, Object> parameters = new LinkedMultiValueMap<String, Object>();
 		parameters.set("username", username);
-		parameters.set("password", password);
+		parameters.set("password", DEFAULT_PASSWORD);
 
-		logger.debug("2. Start auth to uaa");
+		logger.debug("UAA verifying.....");
 
 		@SuppressWarnings("rawtypes")
-		ResponseEntity<Map> response = restTemplate.exchange(loginUrl,
-				HttpMethod.POST, new HttpEntity<MultiValueMap<String, Object>>(
-						parameters, headers), Map.class);
+		ResponseEntity<Map> response = restTemplate.exchange(baseUrl
+				+ "authenticate", HttpMethod.POST,
+				new HttpEntity<MultiValueMap<String, Object>>(parameters,
+						headers), Map.class);
+
+		if (response == null) {
+			logger.debug("UAA auth failed and response is null. Please Check the UAA logs.");
+			throw new RuntimeException(
+					"Could not authenticate with remote server");
+		}
 
 		if (response.getStatusCode() == HttpStatus.OK) {
-			logger.info("3. Successful authentication request for " + username);
+			logger.debug("Successful authentication request for " + username);
 			return new UsernamePasswordAuthenticationToken(username, null,
 					UaaAuthority.USER_AUTHORITIES);
 
 		} else if (response.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-			logger.debug("3. Uaa auth failed. May first login or user error, try to login to LDAP to check username and password");
-
-			boolean ldapAuthResult = ldapAuthHelper.authenticate(username,
-					password);
-
-			if (!ldapAuthResult) {
-				logger.debug("4. Ldap auth failed with " + username + ", "
-						+ password);
-				throw new BadCredentialsException("LDAP authentication failed");
-			}
-
-			logger.debug("4. Ldap auth successfully. So create the cf account via scim");
+			logger.debug("Uaa auth failed. It may be first login, so try to create the cf account via scim");
 
 			ScimUser user = new ScimUser();
 			user.setUserName(username);
 			user.setName(new ScimUser.Name(username, " "));
 			user.addEmail(username);
-			user.setPassword(password);
+			user.setPassword(DEFAULT_PASSWORD);
 			user.setUserType(UaaAuthority.UAA_NONE.getUserType());
 			user.setActive(true);
 			ScimMeta meta = new ScimMeta();
@@ -187,17 +190,19 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 			user.setMeta(meta);
 			user.setGroups(Arrays.asList(new Group(null, "uaa.none")));
 			user.setApprovals(new HashSet<Approval>());
-			user.addPhoneNumber("123456789");
+			user.addPhoneNumber("0");
 			user.setDisplayName(username);
-			user.setSchemas(new String[] { "urn:scim:schemas:core:1.0" });
+			user.setSchemas(SCIM_SCHEMAS);
 
-			logger.debug("5. Start to create ScimUser");
+			logger.debug("Creating User.....");
 
 			ResponseEntity<ScimUser> userResponse = scimTemplate.postForEntity(
 					baseUrl + "Users", user, ScimUser.class);
 			user = userResponse.getBody();
 
-			logger.debug("6. Get all ScimGroups");
+			logger.debug("Created User with username " + username);
+
+			logger.debug("Getting all ScimGroups.....");
 			ResponseEntity<SearchResults> groupsResult = scimTemplate
 					.getForEntity(baseUrl + "Groups", SearchResults.class);
 			SearchResults groups = groupsResult.getBody();
@@ -206,82 +211,77 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 			List<Map<String, Object>> list = (List<Map<String, Object>>) groups
 					.getResources();
 
+			logger.debug("Retriving cloud_controller group id.....");
 			for (Map<String, Object> map : list) {
-				logger.debug("-----");
-				for (String key : map.keySet()) {
-					logger.debug(key + " : " + map.get(key));
-				}
-
-				if (TARGET_GROUP.equals(map.get("displayName").toString().trim())) {
+				if (TARGET_GROUP.equals(map.get("displayName").toString()
+						.trim())) {
 					ccGroupId = (String) map.get("id");
 					break;
 				}
 			}
 
 			if (ccGroupId == null) {
-				logger.debug("7. Cannot get group cc admin group id");
+				logger.debug("Cannot get CC group id");
 				throw new RuntimeException(
 						"Could not authenticate with remote server");
 			}
-			logger.debug("Got group id and to get group now " + ccGroupId);
+
+			logger.debug("Getting ScimGroup with id:" + ccGroupId + " ......");
 
 			ResponseEntity<ScimGroup> group = scimTemplate.getForEntity(baseUrl
 					+ "Groups/" + ccGroupId, ScimGroup.class);
 			ccGroup = group.getBody();
 
 			if (ccGroup == null) {
-				logger.debug("7. Cannot get group cc admin");
+				logger.debug("Cannot get Group CC ");
 				throw new RuntimeException(
 						"Could not authenticate with remote server");
 			}
 
 			ccGroup.getMembers().add(new ScimGroupMember(user.getId()));
 
-			logger.debug("6.2 Update Group information");
-			
+			logger.debug("Add " + username + " to CC group");
+
 			HttpHeaders groupHeaders = new HttpHeaders();
 			groupHeaders.add("If-Match", "*");
 			groupHeaders.setContentType(MediaType.APPLICATION_JSON);
 			groupHeaders.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
-			
+
 			scimTemplate.exchange(baseUrl + "Groups/" + ccGroupId,
-					HttpMethod.PUT, new HttpEntity<ScimGroup>(
-							ccGroup, groupHeaders), ScimGroup.class);
+					HttpMethod.PUT, new HttpEntity<ScimGroup>(ccGroup,
+							groupHeaders), ScimGroup.class);
 
-//			scimTemplate.put(baseUrl + "Groups/" + ccGroup.getId(), ccGroup);
-
-			logger.debug("7. Re-login to UAA via rest");
+			logger.debug("Relogin to UAA via rest");
 
 			@SuppressWarnings("rawtypes")
-			ResponseEntity<Map> newResponse = restTemplate.exchange(loginUrl,
-					HttpMethod.POST,
+			ResponseEntity<Map> newResponse = restTemplate.exchange(baseUrl
+					+ "authenticate", HttpMethod.POST,
 					new HttpEntity<MultiValueMap<String, Object>>(parameters,
 							headers), Map.class);
 			if (newResponse.getStatusCode() == HttpStatus.OK) {
-				logger.debug("8. Successful authentication request for "
+				logger.debug("Successful authentication request for "
 						+ username);
 				Authentication authResult = new UsernamePasswordAuthenticationToken(
 						username, null, UaaAuthority.USER_AUTHORITIES);
 				return authResult;
 
 			} else if (response.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-				logger.debug("8. Unauthorited via new user. This should not happen.");
+				logger.debug("Unauthorited via new user. This should not happen.");
 				throw new BadCredentialsException("Authentication failed");
 			} else if (response.getStatusCode() == HttpStatus.INTERNAL_SERVER_ERROR) {
-				logger.info("8. Internal error from UAA. Please Check the UAA logs.");
+				logger.info("Internal error from UAA. Please Check the UAA logs.");
 			} else {
-				logger.error("8. Unexpected status code "
+				logger.error("Unexpected status code "
 						+ response.getStatusCode() + " from the UAA."
 						+ " Is a compatible version running?");
 			}
 			throw new RuntimeException(
 					"Could not authenticate with remote server");
 		} else if (response.getStatusCode() == HttpStatus.INTERNAL_SERVER_ERROR) {
-			logger.info("3. Internal error from UAA. Please Check the UAA logs.");
+			logger.info("Internal error from UAA. Please Check the UAA logs.");
 		} else {
-			logger.error("3. Unexpected status code "
-					+ response.getStatusCode() + " from the UAA."
-					+ " Is a compatible version running?");
+			logger.error("Unexpected status code " + response.getStatusCode()
+					+ " from the UAA." + " Is a compatible version running?");
 		}
 		throw new RuntimeException("Could not authenticate with remote server");
 	}
