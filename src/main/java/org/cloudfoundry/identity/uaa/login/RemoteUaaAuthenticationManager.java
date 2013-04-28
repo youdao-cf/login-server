@@ -240,15 +240,13 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 			logger.debug("6.2 Update Group information");
 			
 			HttpHeaders groupHeaders = new HttpHeaders();
-			groupHeaders.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+			groupHeaders.add("If-Match", "*");
+			groupHeaders.setContentType(MediaType.APPLICATION_JSON);
 			groupHeaders.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
-
-			MultiValueMap<String, Object> groupParameters = new LinkedMultiValueMap<String, Object>();
-			groupParameters.set("If-Match", "*");
 			
-			restTemplate.exchange(baseUrl + "Groups/" + ccGroupId,
-					HttpMethod.PUT, new HttpEntity<MultiValueMap<String, Object>>(
-							groupParameters, groupHeaders), ScimGroup.class);
+			scimTemplate.exchange(baseUrl + "Groups/" + ccGroupId,
+					HttpMethod.PUT, new HttpEntity<ScimGroup>(
+							ccGroup, groupHeaders), ScimGroup.class);
 
 //			scimTemplate.put(baseUrl + "Groups/" + ccGroup.getId(), ccGroup);
 
