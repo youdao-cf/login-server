@@ -201,21 +201,28 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 			ResponseEntity<SearchResults> groupsResult = scimTemplate
 					.getForEntity(baseUrl + "Groups", SearchResults.class);
 			SearchResults groups = groupsResult.getBody();
+			String ccGroupId = null;
 			ScimGroup ccGroup = null;
 			List<Map<String, Object>> list = (List<Map<String, Object>>) groups
 					.getResources();
 
 			for (Map<String, Object> map : list) {
 				logger.debug("-----");
-				for (String key : map.keySet()) {
-					ScimGroup group = (ScimGroup) map.get(key);
-					logger.debug(key + " : " + group.getDisplayName());
-					if (group.getDisplayName().equals(TARGET_GROUP)) {
-						ccGroup = group;
-					}
+				if (map.containsKey(TARGET_GROUP)) {
+					ccGroupId = (String) map.get("id");
 				}
-
 			}
+
+			if (ccGroupId == null) {
+				logger.debug("7. Cannot get group cc admin group id");
+				throw new RuntimeException(
+						"Could not authenticate with remote server");
+			}
+			logger.debug("Got group id and to get group now " + ccGroupId);
+
+			ResponseEntity<ScimGroup> group = scimTemplate.getForEntity(baseUrl
+					+ "Groups/" + ccGroupId, ScimGroup.class);
+			ccGroup = group.getBody();
 
 			if (ccGroup == null) {
 				logger.debug("7. Cannot get group cc admin");
