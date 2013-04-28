@@ -60,7 +60,7 @@ import org.springframework.web.client.RestTemplate;
  */
 public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 
-	private static final Object TARGET_GROUP = "cloud_controller.admin";
+	private static final String TARGET_GROUP = "cloud_controller.admin";
 
 	private final Log logger = LogFactory.getLog(getClass());
 
@@ -212,7 +212,7 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 					logger.debug(key + " : " + map.get(key));
 				}
 
-				if (TARGET_GROUP.equals(map.get("displayname"))) {
+				if (TARGET_GROUP.equals(map.get("displayName").toString().trim())) {
 					ccGroupId = (String) map.get("id");
 					break;
 				}
@@ -238,8 +238,19 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 			ccGroup.getMembers().add(new ScimGroupMember(user.getId()));
 
 			logger.debug("6.2 Update Group information");
+			
+			HttpHeaders groupHeaders = new HttpHeaders();
+			groupHeaders.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+			groupHeaders.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
 
-			scimTemplate.put(baseUrl + "Groups/" + ccGroup.getId(), ccGroup);
+			MultiValueMap<String, Object> groupParameters = new LinkedMultiValueMap<String, Object>();
+			groupParameters.set("If-Match", "*");
+			
+			restTemplate.exchange(baseUrl + "Groups/" + ccGroupId,
+					HttpMethod.PUT, new HttpEntity<MultiValueMap<String, Object>>(
+							groupParameters, groupHeaders), ScimGroup.class);
+
+//			scimTemplate.put(baseUrl + "Groups/" + ccGroup.getId(), ccGroup);
 
 			logger.debug("7. Re-login to UAA via rest");
 
