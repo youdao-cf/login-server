@@ -208,8 +208,13 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 
 			for (Map<String, Object> map : list) {
 				logger.debug("-----");
-				if (map.containsKey(TARGET_GROUP)) {
+				for (String key : map.keySet()) {
+					logger.debug(key + " : " + map.get(key));
+				}
+
+				if (TARGET_GROUP.equals(map.get("displayname"))) {
 					ccGroupId = (String) map.get("id");
+					break;
 				}
 			}
 
