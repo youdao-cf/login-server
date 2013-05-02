@@ -73,18 +73,7 @@ public class CCHelper {
 		String res = response.getBody().toString();
 		logger.info("<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
 		logger.info(res);
-		try {
-			HashMap<String, Object> map = (LinkedHashMap<String, Object>) response
-					.getBody();
-			if (map != null) {
-				logger.info("<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
-				MetaData meta = (MetaData) map.get("metadata");
-				Organization orga = (Organization) map.get("entity");
-				logger.info(meta.getGuid() + " : " + orga.getName());
-			}
-		} catch (Exception e) {
-			logger.error("convert failed", e);
-		}
+		
 		if (response.getStatusCode() == HttpStatus.OK) {
 			logger.info("create org successfully");
 			return true;
