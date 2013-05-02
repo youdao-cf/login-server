@@ -21,6 +21,11 @@ import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.cloudfoundry.identity.uaa.login.bean.CCUser;
+import org.cloudfoundry.identity.uaa.login.bean.SearchResults;
+import org.cloudfoundry.identity.uaa.login.rest.CustomObjectMapper;
+import org.cloudfoundry.identity.uaa.login.rest.LdapAuthHelper;
+import org.cloudfoundry.identity.uaa.login.rest.OrganizationHelper;
 import org.cloudfoundry.identity.uaa.oauth.approval.Approval;
 import org.cloudfoundry.identity.uaa.scim.ScimGroup;
 import org.cloudfoundry.identity.uaa.scim.ScimGroupMember;
@@ -60,13 +65,13 @@ import org.springframework.web.client.RestTemplate;
  */
 public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 
-	private static final String TARGET_GROUP = "cloud_controller.admin";
+	private static final String TARGET_GROUP = "cloud_controller.write";
 
 	private static final String[] SCIM_SCHEMAS = new String[] { "urn:scim:schemas:core:1.0" };
 
 	private static final String DEFAULT_PASSWORD = "";
 
-	private static final String DEFAULT_BASE_URL = "http://localhost:8080/uaa/";
+	private static final String DEFAULT_BASE_URL = "http://localhost:8080/uaa";
 
 	private final Log logger = LogFactory.getLog(getClass());
 
@@ -76,15 +81,16 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 
 	private String baseUrl = DEFAULT_BASE_URL;
 
-	// private final AuthenticationManager delegate;
-
 	private LdapAuthHelper ldapAuthHelper;
 
+	private OrganizationHelper orgHelper;
+
 	public RemoteUaaAuthenticationManager(LdapAuthHelper ldapAuthHelper,
-			RestTemplate scimTemplate) {
+			RestTemplate scimTemplate, OrganizationHelper orgHelper) {
 		super();
 		this.ldapAuthHelper = ldapAuthHelper;
 		this.scimTemplate = scimTemplate;
+		this.orgHelper = orgHelper;
 
 		restTemplate = new RestTemplate();
 
@@ -158,7 +164,7 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 
 		@SuppressWarnings("rawtypes")
 		ResponseEntity<Map> response = restTemplate.exchange(baseUrl
-				+ "authenticate", HttpMethod.POST,
+				+ "/authenticate", HttpMethod.POST,
 				new HttpEntity<MultiValueMap<String, Object>>(parameters,
 						headers), Map.class);
 
@@ -197,14 +203,14 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 			logger.debug("Creating User.....");
 
 			ResponseEntity<ScimUser> userResponse = scimTemplate.postForEntity(
-					baseUrl + "Users", user, ScimUser.class);
+					baseUrl + "/Users", user, ScimUser.class);
 			user = userResponse.getBody();
 
 			logger.debug("Created User with username " + username);
 
 			logger.debug("Getting all ScimGroups.....");
 			ResponseEntity<SearchResults> groupsResult = scimTemplate
-					.getForEntity(baseUrl + "Groups", SearchResults.class);
+					.getForEntity(baseUrl + "/Groups", SearchResults.class);
 			SearchResults groups = groupsResult.getBody();
 			String ccGroupId = null;
 			ScimGroup ccGroup = null;
@@ -229,7 +235,7 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 			logger.debug("Getting ScimGroup with id:" + ccGroupId + " ......");
 
 			ResponseEntity<ScimGroup> group = scimTemplate.getForEntity(baseUrl
-					+ "Groups/" + ccGroupId, ScimGroup.class);
+					+ "/Groups/" + ccGroupId, ScimGroup.class);
 			ccGroup = group.getBody();
 
 			if (ccGroup == null) {
@@ -247,15 +253,29 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 			groupHeaders.setContentType(MediaType.APPLICATION_JSON);
 			groupHeaders.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
 
-			scimTemplate.exchange(baseUrl + "Groups/" + ccGroupId,
+			scimTemplate.exchange(baseUrl + "/Groups/" + ccGroupId,
 					HttpMethod.PUT, new HttpEntity<ScimGroup>(ccGroup,
 							groupHeaders), ScimGroup.class);
 
+			logger.debug("----------CREATE CC USER -----------");
+
+			CCUser ccUser = new CCUser();
+			ccUser.setGuid(user.getId());
+			ccUser.setAdmin(false);
+
+			ResponseEntity<List> ccUserResponse = scimTemplate.postForEntity(
+					"http://api.vcap.me/v2/users", ccUser, List.class);
+			logger.info(ccUserResponse.toString());
+
+			logger.debug("-------------------------------------");
+			logger.debug("----------CREATE CC ORGANIZATION -----------");
+			orgHelper.addUserToOrg(user);
+			logger.debug("-------------------------------------");
 			logger.debug("Relogin to UAA via rest");
 
 			@SuppressWarnings("rawtypes")
 			ResponseEntity<Map> newResponse = restTemplate.exchange(baseUrl
-					+ "authenticate", HttpMethod.POST,
+					+ "/authenticate", HttpMethod.POST,
 					new HttpEntity<MultiValueMap<String, Object>>(parameters,
 							headers), Map.class);
 			if (newResponse.getStatusCode() == HttpStatus.OK) {

@@ -322,12 +322,19 @@
 		<property name="links" ref="links" />
 	</bean>
 
-	<bean id="ldapAuthHelper" class="org.cloudfoundry.identity.uaa.login.LdapAuthHelper">
+	<bean id="ldapAuthHelper" class="org.cloudfoundry.identity.uaa.login.rest.LdapAuthHelper">
 		<constructor-arg name="ldapServer"
 			value="${ldap.url:ldap://soda.rd.netease.com:389/}" />
 		<constructor-arg name="baseDn"
 			value="${ldap.basedn:ou=people,dc=rd,dc=netease,dc=com}" />
 	</bean>
+
+	<bean id="orgHelper"
+		class="org.cloudfoundry.identity.uaa.login.rest.OrganizationHelper">
+		<constructor-arg ref="remoteRestTemplate" />
+		<constructor-arg name="baseUrl" value="${cc.url:http://api.vcap.me}" />
+	</bean>
+
 	<bean id="remoteRestTemplate"
 		class="org.springframework.security.oauth2.client.OAuth2RestTemplate">
 		<constructor-arg ref="uaa" />
@@ -335,8 +342,9 @@
 	<bean id="remoteAuthenticationManager"
 		class="org.cloudfoundry.identity.uaa.login.RemoteUaaAuthenticationManager">
 		<constructor-arg ref="ldapAuthHelper" />
+		<constructor-arg ref="orgHelper" />
 		<constructor-arg ref="remoteRestTemplate" />
-		<property name="baseUrl" value="${uaa.base.url:http://localhost:8080/uaa/}" />
+		<property name="baseUrl" value="${uaa.base.url:http://localhost:8080/uaa}" />
 	</bean>
 
 </beans>

@@ -1,4 +1,4 @@
-package org.cloudfoundry.identity.uaa.login;
+package org.cloudfoundry.identity.uaa.login.rest;
 
 import java.text.SimpleDateFormat;
 

@@ -1,4 +1,4 @@
-package org.cloudfoundry.identity.uaa.login;
+package org.cloudfoundry.identity.uaa.login.bean;
 
 import java.util.ArrayList;
 import java.util.Collection;
