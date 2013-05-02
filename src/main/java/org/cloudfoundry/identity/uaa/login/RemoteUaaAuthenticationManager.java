@@ -262,7 +262,6 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 			CCUser ccUser = new CCUser();
 			ccUser.setGuid(user.getId());
 			ccUser.setAdmin(false);
-			ccUser.setActive(true);
 
 			scimTemplate.postForEntity("http://api.vcap.me/v2/users", ccUser,
 					Object.class);

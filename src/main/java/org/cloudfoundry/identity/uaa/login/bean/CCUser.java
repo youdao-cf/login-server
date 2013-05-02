@@ -6,7 +6,6 @@ import org.codehaus.jackson.map.annotate.JsonSerialize;
 public class CCUser {
 	private String guid;
 	private boolean admin;
-	private boolean active;
 	private String default_space_guid;
 	private String[] space_guids;
 	private String[] organization_guids;
@@ -15,14 +14,6 @@ public class CCUser {
 	private String[] audited_organization_guids;
 	private String[] managed_space_guids;
 	private String[] audited_space_guids;
-
-	public boolean isActive() {
-		return active;
-	}
-
-	public void setActive(boolean active) {
-		this.active = active;
-	}
 
 	public String getGuid() {
 		return guid;

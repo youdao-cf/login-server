@@ -32,7 +32,7 @@ public class OrganizationHelper {
 			return false;
 		}
 		Organization org = new Organization();
-		org.setName(user.getDisplayName() + "'s organization");
+		org.setName(user.getName() + "'s organization");
 		org.setManager_guids(new String[] { user.getId() });
 		org.setUser_guids(new String[] { user.getId() });
 		if (!createOrg(org)) {
