@@ -32,6 +32,7 @@ import org.cloudfoundry.identity.uaa.scim.ScimGroupMember;
 import org.cloudfoundry.identity.uaa.scim.ScimMeta;
 import org.cloudfoundry.identity.uaa.scim.ScimUser;
 import org.cloudfoundry.identity.uaa.scim.ScimUser.Group;
+import org.cloudfoundry.identity.uaa.scim.exception.ScimResourceAlreadyExistsException;
 import org.cloudfoundry.identity.uaa.user.UaaAuthority;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -202,9 +203,15 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 
 			logger.debug("Creating User.....");
 
-			ResponseEntity<ScimUser> userResponse = scimTemplate.postForEntity(
-					baseUrl + "/Users", user, ScimUser.class);
-			user = userResponse.getBody();
+			try {
+				ResponseEntity<ScimUser> userResponse = scimTemplate
+						.postForEntity(baseUrl + "/Users", user, ScimUser.class);
+				user = userResponse.getBody();
+			} catch (ScimResourceAlreadyExistsException e) {
+				logger.error(username + " exists but inactive now.");
+				throw new RuntimeException(username
+						+ " exists but inactive now.");
+			}
 
 			logger.debug("Created User with username " + username);
 
