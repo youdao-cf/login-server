@@ -332,7 +332,7 @@
 	<bean id="ccHelper"
 		class="org.cloudfoundry.identity.uaa.login.rest.CCHelper">
 		<constructor-arg ref="remoteRestTemplate" />
-		<constructor-arg name="baseUrl" value="${cc.url:http://api.vcap.me}" />
+		<constructor-arg name="baseUrl" value="${cc.api.url:http://api.vcap.me}" />
 	</bean>
 
 	<bean id="remoteRestTemplate"

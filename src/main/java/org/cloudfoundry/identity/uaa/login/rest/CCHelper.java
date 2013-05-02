@@ -1,16 +1,9 @@
 package org.cloudfoundry.identity.uaa.login.rest;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.cloudfoundry.identity.uaa.login.bean.CCUser;
-import org.cloudfoundry.identity.uaa.login.bean.MetaData;
 import org.cloudfoundry.identity.uaa.login.bean.Organization;
-import org.cloudfoundry.identity.uaa.scim.ScimUser;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;

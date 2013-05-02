@@ -1,14 +1,17 @@
 uaa:
-  url: http://uaa.vcap.me
+  url: http://uaa.vcap.me/uaa
   token:
-    url: http://uaa.vcap.me/oauth/token
+    url: http://uaa.vcap.me/uaa/oauth/token
   login:
-    url: http://uaa.vcap.me/authenticate
+    url: http://uaa.vcap.me/uaa/authenticate
   clientinfo:
-    url: https://uaa.vcap.me/clientinfo
+    url: https://uaa.vcap.me/uaa/clientinfo
   approvals:
-    url: https://uaa.vcap.me/approvals
+    url: https://uaa.vcap.me/uaa/approvals
 login:
   authorize:
-    url: https://login.vcap.me/oauth/authorize
+    url: https://login.vcap.me/loginserver/oauth/authorize
+cc:
+  api:
+    url: http://api.vcap.me
     

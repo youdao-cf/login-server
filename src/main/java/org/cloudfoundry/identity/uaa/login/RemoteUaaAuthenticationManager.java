@@ -141,7 +141,7 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 
 		logger.debug("Get username and password " + username + "/" + password);
 
-		logger.debug("LDAP verifying....");
+		logger.info("LDAP verifying....");
 
 		boolean ldapAuthResult = ldapAuthHelper
 				.authenticate(username, password);
@@ -150,7 +150,7 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 			logger.debug("Ldap auth failed with " + username + ", " + password);
 			throw new BadCredentialsException("LDAP authentication failed");
 		}
-		logger.debug("LDAP auth passed");
+		logger.info("LDAP auth passed");
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
@@ -160,7 +160,7 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 		parameters.set("username", username);
 		parameters.set("password", DEFAULT_PASSWORD);
 
-		logger.debug("UAA verifying.....");
+		logger.info("UAA verifying.....");
 
 		@SuppressWarnings("rawtypes")
 		ResponseEntity<Map> response = restTemplate.exchange(baseUrl
@@ -169,46 +169,36 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 						headers), Map.class);
 
 		if (response == null) {
-			logger.debug("UAA auth failed and response is null. Please Check the UAA logs.");
+			logger.error("UAA auth failed and response is null. Please Check the UAA logs.");
 			throw new RuntimeException(
 					"Could not authenticate with remote server");
 		}
 
 		if (response.getStatusCode() == HttpStatus.OK) {
-			logger.debug("Successful authentication request for " + username);
+			logger.info("Successful authentication request for " + username);
 			return new UsernamePasswordAuthenticationToken(username, null,
 					UaaAuthority.USER_AUTHORITIES);
 
 		} else if (response.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-			logger.debug("Uaa auth failed. It may be first login, so try to create the cf account via scim");
+			logger.info("Uaa auth failed. It may be first login or your account is inactive, so try to create the cf account via scim first");
 
-			ScimUser user = new ScimUser();
-			user.setUserName(username);
-			user.setName(new ScimUser.Name(username, " "));
-			user.addEmail(username);
-			user.setPassword(DEFAULT_PASSWORD);
-			user.setUserType(UaaAuthority.UAA_NONE.getUserType());
-			user.setActive(true);
-			ScimMeta meta = new ScimMeta();
-			Date now = new Date();
-			meta.setCreated(now);
-			meta.setLastModified(now);
-			user.setMeta(meta);
-			user.setGroups(Arrays.asList(new Group(null, "uaa.none")));
-			user.setApprovals(new HashSet<Approval>());
-			user.addPhoneNumber("0");
-			user.setDisplayName(username);
-			user.setSchemas(SCIM_SCHEMAS);
+			ScimUser user = createScimUser(username);
 
-			logger.debug("Creating User.....");
+			logger.info("Creating User.....");
 
-			ResponseEntity<ScimUser> userResponse = scimTemplate.postForEntity(
-					baseUrl + "/Users", user, ScimUser.class);
-			user = userResponse.getBody();
+			try {
+				ResponseEntity<ScimUser> userResponse = scimTemplate
+						.postForEntity(baseUrl + "/Users", user, ScimUser.class);
+				user = userResponse.getBody();
+			} catch (Exception e) {
+				logger.error(username + " exists but inactive now.");
+				throw new RuntimeException(username
+						+ " exists but inactive now.");
+			}
 
-			logger.debug("Created User with username " + username);
+			logger.info("Created User with username " + username);
 
-			logger.debug("Getting all ScimGroups.....");
+			logger.info("Getting all ScimGroups.....");
 			ResponseEntity<SearchResults> groupsResult = scimTemplate
 					.getForEntity(baseUrl + "/Groups", SearchResults.class);
 			SearchResults groups = groupsResult.getBody();
@@ -217,7 +207,7 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 			List<Map<String, Object>> list = (List<Map<String, Object>>) groups
 					.getResources();
 
-			logger.debug("Retriving cloud_controller group id.....");
+			logger.info("Retriving cloud_controller group id.....");
 			for (Map<String, Object> map : list) {
 				if (TARGET_GROUP.equals(map.get("displayName").toString()
 						.trim())) {
@@ -227,26 +217,26 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 			}
 
 			if (ccGroupId == null) {
-				logger.debug("Cannot get CC group id");
+				logger.error("Cannot get CC group id");
 				throw new RuntimeException(
 						"Could not authenticate with remote server");
 			}
 
-			logger.debug("Getting ScimGroup with id:" + ccGroupId + " ......");
+			logger.info("Getting ScimGroup with id:" + ccGroupId + " ......");
 
 			ResponseEntity<ScimGroup> group = scimTemplate.getForEntity(baseUrl
 					+ "/Groups/" + ccGroupId, ScimGroup.class);
 			ccGroup = group.getBody();
 
 			if (ccGroup == null) {
-				logger.debug("Cannot get Group CC ");
+				logger.error("Cannot get Group CC ");
 				throw new RuntimeException(
 						"Could not authenticate with remote server");
 			}
 
 			ccGroup.getMembers().add(new ScimGroupMember(user.getId()));
 
-			logger.debug("Add " + username + " to CC group");
+			logger.info("Adding " + username + " to CC group.....");
 
 			HttpHeaders groupHeaders = new HttpHeaders();
 			groupHeaders.add("If-Match", "*");
@@ -257,11 +247,20 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 					HttpMethod.PUT, new HttpEntity<ScimGroup>(ccGroup,
 							groupHeaders), ScimGroup.class);
 
-			ccHelper.addCCUser(user.getId());
+			logger.info("Adding CloudController User.....");
+			if (!ccHelper.addCCUser(user.getId())) {
+				logger.error("Cannot add CC User for " + username);
+				throw new RuntimeException("Cannot add CC User for " + username);
+			}
 
-			ccHelper.addUserToOrg(username, user.getId());
+			logger.info("Adding Organization for User.....");
+			if (!ccHelper.addUserToOrg(username, user.getId())) {
+				logger.error("Cannot create CC Organization for " + username);
+				throw new RuntimeException("Cannot create CC Organization for "
+						+ username);
+			}
 
-			logger.debug("Relogin to UAA via rest");
+			logger.info("Relogin to UAA via rest");
 
 			@SuppressWarnings("rawtypes")
 			ResponseEntity<Map> newResponse = restTemplate.exchange(baseUrl
@@ -269,17 +268,16 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 					new HttpEntity<MultiValueMap<String, Object>>(parameters,
 							headers), Map.class);
 			if (newResponse.getStatusCode() == HttpStatus.OK) {
-				logger.debug("Successful authentication request for "
-						+ username);
+				logger.info("Successful authentication request for " + username);
 				Authentication authResult = new UsernamePasswordAuthenticationToken(
 						username, null, UaaAuthority.USER_AUTHORITIES);
 				return authResult;
 
 			} else if (response.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-				logger.debug("Unauthorited via new user. This should not happen.");
+				logger.error("Unauthorited via new user. This should not happen.");
 				throw new BadCredentialsException("Authentication failed");
 			} else if (response.getStatusCode() == HttpStatus.INTERNAL_SERVER_ERROR) {
-				logger.info("Internal error from UAA. Please Check the UAA logs.");
+				logger.error("Internal error from UAA. Please Check the UAA logs.");
 			} else {
 				logger.error("Unexpected status code "
 						+ response.getStatusCode() + " from the UAA."
@@ -288,11 +286,32 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 			throw new RuntimeException(
 					"Could not authenticate with remote server");
 		} else if (response.getStatusCode() == HttpStatus.INTERNAL_SERVER_ERROR) {
-			logger.info("Internal error from UAA. Please Check the UAA logs.");
+			logger.error("Internal error from UAA. Please Check the UAA logs.");
 		} else {
 			logger.error("Unexpected status code " + response.getStatusCode()
 					+ " from the UAA." + " Is a compatible version running?");
 		}
 		throw new RuntimeException("Could not authenticate with remote server");
+	}
+
+	private ScimUser createScimUser(String username) {
+		ScimUser user = new ScimUser();
+		user.setUserName(username);
+		user.setName(new ScimUser.Name(username, " "));
+		user.addEmail(username);
+		user.setPassword(DEFAULT_PASSWORD);
+		user.setUserType(UaaAuthority.UAA_NONE.getUserType());
+		user.setActive(true);
+		ScimMeta meta = new ScimMeta();
+		Date now = new Date();
+		meta.setCreated(now);
+		meta.setLastModified(now);
+		user.setMeta(meta);
+		user.setGroups(Arrays.asList(new Group(null, "uaa.none")));
+		user.setApprovals(new HashSet<Approval>());
+		user.addPhoneNumber("0");
+		user.setDisplayName(username);
+		user.setSchemas(SCIM_SCHEMAS);
+		return user;
 	}
 }
