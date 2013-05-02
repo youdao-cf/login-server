@@ -66,14 +66,16 @@ public class CCHelper {
 		String res = response.getBody().toString();
 		logger.info("<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
 		logger.info(res);
-		
-		if (response.getStatusCode() == HttpStatus.OK) {
+
+		if (response.getStatusCode() == HttpStatus.CREATED) {
 			logger.info("create org successfully");
 			return true;
+		} else if (response.getStatusCode() == HttpStatus.CONFLICT) {
+			logger.info("org " + org.getName() + " exists now");
+			return false;
 		} else {
 			logger.info("create org failed");
 			return false;
 		}
 	}
-
 }
