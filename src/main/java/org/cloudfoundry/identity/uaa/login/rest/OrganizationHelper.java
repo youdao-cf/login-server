@@ -44,7 +44,7 @@ public class OrganizationHelper {
 
 	private boolean createOrg(Organization org) {
 		ResponseEntity response = restTemplate.postForEntity(orgUrl, org,
-				List.class);
+				Object.class);
 		String res = response.getBody().toString();
 		String all = response.toString();
 		logger.info("<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
