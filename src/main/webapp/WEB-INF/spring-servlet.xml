@@ -329,8 +329,8 @@
 			value="${ldap.basedn:ou=people,dc=rd,dc=netease,dc=com}" />
 	</bean>
 
-	<bean id="orgHelper"
-		class="org.cloudfoundry.identity.uaa.login.rest.OrganizationHelper">
+	<bean id="ccHelper"
+		class="org.cloudfoundry.identity.uaa.login.rest.CCHelper">
 		<constructor-arg ref="remoteRestTemplate" />
 		<constructor-arg name="baseUrl" value="${cc.url:http://api.vcap.me}" />
 	</bean>
@@ -342,7 +342,7 @@
 	<bean id="remoteAuthenticationManager"
 		class="org.cloudfoundry.identity.uaa.login.RemoteUaaAuthenticationManager">
 		<constructor-arg ref="ldapAuthHelper" />
-		<constructor-arg ref="orgHelper" />
+		<constructor-arg ref="ccHelper" />
 		<constructor-arg ref="remoteRestTemplate" />
 		<property name="baseUrl" value="${uaa.base.url:http://localhost:8080/uaa}" />
 	</bean>

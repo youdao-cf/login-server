@@ -25,7 +25,7 @@ import org.cloudfoundry.identity.uaa.login.bean.CCUser;
 import org.cloudfoundry.identity.uaa.login.bean.SearchResults;
 import org.cloudfoundry.identity.uaa.login.rest.CustomObjectMapper;
 import org.cloudfoundry.identity.uaa.login.rest.LdapAuthHelper;
-import org.cloudfoundry.identity.uaa.login.rest.OrganizationHelper;
+import org.cloudfoundry.identity.uaa.login.rest.CCHelper;
 import org.cloudfoundry.identity.uaa.oauth.approval.Approval;
 import org.cloudfoundry.identity.uaa.scim.ScimGroup;
 import org.cloudfoundry.identity.uaa.scim.ScimGroupMember;
@@ -83,14 +83,14 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 
 	private LdapAuthHelper ldapAuthHelper;
 
-	private OrganizationHelper orgHelper;
+	private CCHelper ccHelper;
 
 	public RemoteUaaAuthenticationManager(LdapAuthHelper ldapAuthHelper,
-			RestTemplate scimTemplate, OrganizationHelper orgHelper) {
+			RestTemplate scimTemplate, CCHelper ccHelper) {
 		super();
 		this.ldapAuthHelper = ldapAuthHelper;
 		this.scimTemplate = scimTemplate;
-		this.orgHelper = orgHelper;
+		this.ccHelper = ccHelper;
 
 		restTemplate = new RestTemplate();
 
@@ -257,19 +257,8 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 					HttpMethod.PUT, new HttpEntity<ScimGroup>(ccGroup,
 							groupHeaders), ScimGroup.class);
 
-			logger.debug("----------CREATE CC USER -----------");
-
-			CCUser ccUser = new CCUser();
-			ccUser.setGuid(user.getId());
-			ccUser.setAdmin(false);
-
-			scimTemplate.postForEntity("http://api.vcap.me/v2/users", ccUser,
-					Object.class);
-
-			logger.debug("-------------------------------------");
-			logger.debug("----------CREATE CC ORGANIZATION -----------");
-			orgHelper.addUserToOrg(user);
-			logger.debug("-------------------------------------");
+			ccHelper.addUserToOrg(username, user.getId());
+			
 			logger.debug("Relogin to UAA via rest");
 
 			@SuppressWarnings("rawtypes")
