@@ -73,6 +73,8 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 
 	private static final String DEFAULT_BASE_URL = "http://localhost:8080/uaa";
 
+	private static final String EMAIL_SUFFIX = "@rd.netease.com";
+
 	private final Log logger = LogFactory.getLog(getClass());
 
 	private RestTemplate restTemplate;
@@ -138,13 +140,19 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 
 		String username = authentication.getName();
 		String password = (String) authentication.getCredentials();
+		String email = null;
+		if (username.endsWith(EMAIL_SUFFIX)) {
+			email = username;
+			username = email.substring(0, email.indexOf(EMAIL_SUFFIX));
+		} else {
+			email = username + EMAIL_SUFFIX;
+		}
 
 		logger.debug("Get username and password " + username + "/" + password);
 
 		logger.info("LDAP verifying....");
 
-		boolean ldapAuthResult = ldapAuthHelper
-				.authenticate(username, password);
+		boolean ldapAuthResult = ldapAuthHelper.authenticate(email, password);
 
 		if (!ldapAuthResult) {
 			logger.debug("Ldap auth failed with " + username + ", " + password);
@@ -182,7 +190,7 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 		} else if (response.getStatusCode() == HttpStatus.UNAUTHORIZED) {
 			logger.info("Uaa auth failed. It may be first login or your account is inactive, so try to create the cf account via scim first");
 
-			ScimUser user = createScimUser(username);
+			ScimUser user = createScimUser(username, email);
 
 			logger.info("Creating User.....");
 
@@ -294,11 +302,11 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 		throw new RuntimeException("Could not authenticate with remote server");
 	}
 
-	private ScimUser createScimUser(String username) {
+	private ScimUser createScimUser(String username, String email) {
 		ScimUser user = new ScimUser();
 		user.setUserName(username);
 		user.setName(new ScimUser.Name(username, " "));
-		user.addEmail(username);
+		user.addEmail(email);
 		user.setPassword(DEFAULT_PASSWORD);
 		user.setUserType(UaaAuthority.UAA_NONE.getUserType());
 		user.setActive(false);
