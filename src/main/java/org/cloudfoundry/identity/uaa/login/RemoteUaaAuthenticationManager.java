@@ -257,8 +257,10 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 					HttpMethod.PUT, new HttpEntity<ScimGroup>(ccGroup,
 							groupHeaders), ScimGroup.class);
 
+			ccHelper.addCCUser(user.getId());
+
 			ccHelper.addUserToOrg(username, user.getId());
-			
+
 			logger.debug("Relogin to UAA via rest");
 
 			@SuppressWarnings("rawtypes")
