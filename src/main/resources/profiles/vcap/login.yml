@@ -10,7 +10,7 @@ uaa:
     url: https://uaa.vcap.me/uaa/approvals
 login:
   authorize:
-    url: https://login.vcap.me/loginserver/oauth/authorize
+    url: https://login.vcap.me/login/oauth/authorize
 cc:
   api:
     url: http://api.vcap.me
