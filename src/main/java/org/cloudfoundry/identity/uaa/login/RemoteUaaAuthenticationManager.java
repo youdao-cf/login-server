@@ -52,11 +52,9 @@ import org.springframework.web.client.DefaultResponseErrorHandler;
 import org.springframework.web.client.RestTemplate;
 
 /**
- * An authentication manager that can be used to login to a remote UAA service
- * with username and password credentials, without the local server needing to
- * know anything about the user accounts. The request is handled by the UAA's
- * RemoteAuhenticationEndpoint and success or failure is determined by the
- * response code.
+ * An authentication manager that can be used to login to a remote UAA service with username and password credentials, 
+ * without the local server needing to know anything about the user accounts. The request is handled by the UAA's
+ * RemoteAuhenticationEndpoint and success or failure is determined by the response code.
  * 
  * @author Dave Syer
  * @author Luke Taylor
@@ -114,8 +112,7 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 			}
 		});
 
-		restTemplate
-				.setRequestFactory(new HttpComponentsClientHttpRequestFactory());
+		restTemplate.setRequestFactory(new HttpComponentsClientHttpRequestFactory());
 		restTemplate.setErrorHandler(new DefaultResponseErrorHandler() {
 			protected boolean hasError(HttpStatus statusCode) {
 				return statusCode.series() == HttpStatus.Series.SERVER_ERROR;
@@ -136,8 +133,7 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 	}
 
 	@Override
-	public Authentication authenticate(Authentication authentication)
-			throws AuthenticationException {
+	public Authentication authenticate(Authentication authentication) throws AuthenticationException {
 		if (authentication == null) {
 			logger.warn("Authentication is null, please check your input");
 			return null;
@@ -298,10 +294,10 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 			throw new RuntimeException(
 					"Could not authenticate with remote server");
 		} else if (response.getStatusCode() == HttpStatus.INTERNAL_SERVER_ERROR) {
-			logger.error("Internal error from UAA. Please Check the UAA logs.");
+			logger.info("Internal error from UAA. Please Check the UAA logs.");
 		} else {
-			logger.error("Unexpected status code " + response.getStatusCode()
-					+ " from the UAA." + " Is a compatible version running?");
+			logger.error("Unexpected status code " + response.getStatusCode() + " from the UAA." 
+					+ " Is a compatible version running?");
 		}
 		throw new RuntimeException("Could not authenticate with remote server");
 	}
