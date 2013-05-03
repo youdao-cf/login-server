@@ -4,7 +4,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 /**
- * @author Dave Syer
+ * Based on SearchResults of UAA and add default constructor for JSON convert.
+ * 
+ * @author Dachao Zhao
  * 
  */
 public class SearchResults<T> {

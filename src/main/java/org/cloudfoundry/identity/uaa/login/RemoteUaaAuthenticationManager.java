@@ -21,11 +21,10 @@ import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.cloudfoundry.identity.uaa.login.bean.CCUser;
 import org.cloudfoundry.identity.uaa.login.bean.SearchResults;
+import org.cloudfoundry.identity.uaa.login.rest.CCHelper;
 import org.cloudfoundry.identity.uaa.login.rest.CustomObjectMapper;
 import org.cloudfoundry.identity.uaa.login.rest.LdapAuthHelper;
-import org.cloudfoundry.identity.uaa.login.rest.CCHelper;
 import org.cloudfoundry.identity.uaa.oauth.approval.Approval;
 import org.cloudfoundry.identity.uaa.scim.ScimGroup;
 import org.cloudfoundry.identity.uaa.scim.ScimGroupMember;
@@ -61,6 +60,12 @@ import org.springframework.web.client.RestTemplate;
  * 
  * @author Dave Syer
  * @author Luke Taylor
+ * 
+ * ---------------------------------------------
+ *
+ * Integrate with Ldap auth, user account management and cc resource allocation
+ * 
+ * @author Dachao Zhao
  * 
  */
 public class RemoteUaaAuthenticationManager implements AuthenticationManager {
@@ -285,10 +290,9 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 				logger.error("Unauthorited via new user. This should not happen.");
 				throw new BadCredentialsException("Authentication failed");
 			} else if (response.getStatusCode() == HttpStatus.INTERNAL_SERVER_ERROR) {
-				logger.error("Internal error from UAA. Please Check the UAA logs.");
+				logger.info("Internal error from UAA. Please Check the UAA logs.");
 			} else {
-				logger.error("Unexpected status code "
-						+ response.getStatusCode() + " from the UAA."
+				logger.error("Unexpected status code " + response.getStatusCode() + " from the UAA."
 						+ " Is a compatible version running?");
 			}
 			throw new RuntimeException(
