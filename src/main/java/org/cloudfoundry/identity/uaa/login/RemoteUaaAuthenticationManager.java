@@ -52,10 +52,10 @@ import org.springframework.web.client.DefaultResponseErrorHandler;
 import org.springframework.web.client.RestTemplate;
 
 /**
- * An authentication manager that can be used to login to a remote UAA service with username and password credentials, 
+ * An authentication manager that can be used to login to a remote UAA service with username and password credentials,
  * without the local server needing to know anything about the user accounts. The request is handled by the UAA's
  * RemoteAuhenticationEndpoint and success or failure is determined by the response code.
- * 
+ *
  * @author Dave Syer
  * @author Luke Taylor
  * 
@@ -296,8 +296,8 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 		} else if (response.getStatusCode() == HttpStatus.INTERNAL_SERVER_ERROR) {
 			logger.info("Internal error from UAA. Please Check the UAA logs.");
 		} else {
-			logger.error("Unexpected status code " + response.getStatusCode() + " from the UAA." 
-					+ " Is a compatible version running?");
+			logger.error("Unexpected status code " + response.getStatusCode() + " from the UAA." +
+					" Is a compatible version running?");
 		}
 		throw new RuntimeException("Could not authenticate with remote server");
 	}
