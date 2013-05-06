@@ -21,13 +21,10 @@ import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.cloudfoundry.identity.uaa.login.bean.SearchResults;
 import org.cloudfoundry.identity.uaa.login.rest.CCHelper;
 import org.cloudfoundry.identity.uaa.login.rest.CustomObjectMapper;
 import org.cloudfoundry.identity.uaa.login.rest.LdapAuthHelper;
 import org.cloudfoundry.identity.uaa.oauth.approval.Approval;
-import org.cloudfoundry.identity.uaa.scim.ScimGroup;
-import org.cloudfoundry.identity.uaa.scim.ScimGroupMember;
 import org.cloudfoundry.identity.uaa.scim.ScimMeta;
 import org.cloudfoundry.identity.uaa.scim.ScimUser;
 import org.cloudfoundry.identity.uaa.scim.ScimUser.Group;
@@ -67,8 +64,6 @@ import org.springframework.web.client.RestTemplate;
  * 
  */
 public class RemoteUaaAuthenticationManager implements AuthenticationManager {
-
-	private static final String TARGET_GROUP = "cloud_controller.write";
 
 	private static final String[] SCIM_SCHEMAS = new String[] { "urn:scim:schemas:core:1.0" };
 
@@ -206,55 +201,6 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 			}
 
 			logger.info("Created User with username " + username);
-
-			logger.info("Getting all ScimGroups.....");
-			ResponseEntity<SearchResults> groupsResult = scimTemplate
-					.getForEntity(baseUrl + "/Groups", SearchResults.class);
-			SearchResults groups = groupsResult.getBody();
-			String ccGroupId = null;
-			ScimGroup ccGroup = null;
-			List<Map<String, Object>> list = (List<Map<String, Object>>) groups
-					.getResources();
-
-			logger.info("Retriving cloud_controller group id.....");
-			for (Map<String, Object> map : list) {
-				if (TARGET_GROUP.equals(map.get("displayName").toString()
-						.trim())) {
-					ccGroupId = (String) map.get("id");
-					break;
-				}
-			}
-
-			if (ccGroupId == null) {
-				logger.error("Cannot get CC group id");
-				throw new RuntimeException(
-						"Could not authenticate with remote server");
-			}
-
-			logger.info("Getting ScimGroup with id:" + ccGroupId + " ......");
-
-			ResponseEntity<ScimGroup> group = scimTemplate.getForEntity(baseUrl
-					+ "/Groups/" + ccGroupId, ScimGroup.class);
-			ccGroup = group.getBody();
-
-			if (ccGroup == null) {
-				logger.error("Cannot get Group CC ");
-				throw new RuntimeException(
-						"Could not authenticate with remote server");
-			}
-
-			ccGroup.getMembers().add(new ScimGroupMember(user.getId()));
-
-			logger.info("Adding " + username + " to CC group.....");
-
-			HttpHeaders groupHeaders = new HttpHeaders();
-			groupHeaders.add("If-Match", "*");
-			groupHeaders.setContentType(MediaType.APPLICATION_JSON);
-			groupHeaders.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
-
-			scimTemplate.exchange(baseUrl + "/Groups/" + ccGroupId,
-					HttpMethod.PUT, new HttpEntity<ScimGroup>(ccGroup,
-							groupHeaders), ScimGroup.class);
 
 			logger.info("Adding CloudController User.....");
 			if (!ccHelper.addCCUser(user.getId())) {
