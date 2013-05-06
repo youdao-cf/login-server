@@ -68,7 +68,7 @@ import org.springframework.web.client.RestTemplate;
  */
 public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 
-	private static final String TARGET_GROUP = "cloud_controller.write";
+	private static final String DEFAULT_TARGET_GROUP = "cloud_controller.write";
 
 	private static final String[] SCIM_SCHEMAS = new String[] { "urn:scim:schemas:core:1.0" };
 
@@ -85,6 +85,10 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 	private RestTemplate scimTemplate;
 
 	private String baseUrl = DEFAULT_BASE_URL;
+	
+	private String isActiveDefault = "false";
+	
+	private String targetGroup = DEFAULT_TARGET_GROUP;
 
 	private LdapAuthHelper ldapAuthHelper;
 
@@ -118,6 +122,14 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 				return statusCode.series() == HttpStatus.Series.SERVER_ERROR;
 			}
 		});
+	}
+
+	public void setIsActiveDefault(String isActiveDefault) {
+		this.isActiveDefault = isActiveDefault;
+	}
+
+	public void setTargetGroup(String targetGroup) {
+		this.targetGroup = targetGroup;
 	}
 
 	/**
@@ -218,7 +230,7 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 
 			logger.info("Retriving cloud_controller group id.....");
 			for (Map<String, Object> map : list) {
-				if (TARGET_GROUP.equals(map.get("displayName").toString()
+				if (targetGroup.equals(map.get("displayName").toString()
 						.trim())) {
 					ccGroupId = (String) map.get("id");
 					break;
@@ -309,7 +321,7 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 		user.addEmail(email);
 		user.setPassword(DEFAULT_PASSWORD);
 		user.setUserType(UaaAuthority.UAA_NONE.getUserType());
-		user.setActive(false);
+		user.setActive(Boolean.parseBoolean(isActiveDefault));
 		ScimMeta meta = new ScimMeta();
 		Date now = new Date();
 		meta.setCreated(now);
