@@ -304,7 +304,7 @@
 		<constructor-arg ref="ldapAuthHelper" />
 		<constructor-arg ref="ccHelper" />
 		<constructor-arg ref="remoteRestTemplate" />
-		<property name="baseUrl" value="${uaa.base.url:http://localhost:8080/uaa}" />
+		<property name="baseUrl" value="${uaa.url:http://localhost:8080/uaa}" />
 	</bean>
 
 </beans>
