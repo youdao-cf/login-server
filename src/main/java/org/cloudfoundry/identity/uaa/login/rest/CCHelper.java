@@ -90,7 +90,7 @@ public class CCHelper {
 		logger.debug("----------CREATE CC DOMAIN -----------");
 		Domain domain = new Domain();
 		domain.setName(orgName + DOMAIN_SUFFIX);
-		domain.setOwning_organization_id(org_guid);
+		domain.setOwning_organization_guid(org_guid);
 		domain.setOrganization_guids(new String[] { org_guid });
 		domain.setSpace_guids(new String[] { space_guid });
 		domain.setWildcard(true);

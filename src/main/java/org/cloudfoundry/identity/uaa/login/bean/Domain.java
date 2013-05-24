@@ -6,7 +6,7 @@ import org.codehaus.jackson.map.annotate.JsonSerialize;
 public class Domain {
 	private String name;
 	private boolean wildcard;
-	private String owning_organization_id;
+	private String owning_organization_guid;
 	private String[] organization_guids;
 	private String[] space_guids;
 
@@ -26,12 +26,12 @@ public class Domain {
 		this.wildcard = wildcard;
 	}
 
-	public String getOwning_organization_id() {
-		return owning_organization_id;
+	public String getOwning_organization_guid() {
+		return owning_organization_guid;
 	}
 
-	public void setOwning_organization_id(String owning_organization_id) {
-		this.owning_organization_id = owning_organization_id;
+	public void setOwning_organization_guid(String owning_organization_guid) {
+		this.owning_organization_guid = owning_organization_guid;
 	}
 
 	public String[] getOrganization_guids() {
