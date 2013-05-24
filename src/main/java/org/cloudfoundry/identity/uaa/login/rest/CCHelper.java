@@ -62,20 +62,21 @@ public class CCHelper {
 			return false;
 		}
 
-		String space_guid = addUserToDefaultSpace(org_guid, user_guid);
+		String domain_guid = addOrgAndSpaceToDomain(name, org_guid);
+
+		if (domain_guid == null) {
+			logger.error("Cannot create Domain");
+			return false;
+		}
+
+		String space_guid = addUserToDefaultSpace(org_guid, domain_guid,
+				user_guid);
 
 		if (space_guid == null) {
 			logger.error("Cannot create Space");
 			return false;
 		}
 
-		String domain_guid = addOrgAndSpaceToDomain(name, org_guid, space_guid);
-
-		if (domain_guid == null) {
-			logger.error("Cannot create Domain");
-			return false;
-		}
-		
 		logger.debug("==============================");
 		logger.debug("Organization: " + org_guid);
 		logger.debug("Space: " + space_guid);
@@ -85,14 +86,11 @@ public class CCHelper {
 		return true;
 	}
 
-	private String addOrgAndSpaceToDomain(String orgName, String org_guid,
-			String space_guid) {
+	private String addOrgAndSpaceToDomain(String orgName, String org_guid) {
 		logger.debug("----------CREATE CC DOMAIN -----------");
 		Domain domain = new Domain();
 		domain.setName(orgName + DOMAIN_SUFFIX);
 		domain.setOwning_organization_guid(org_guid);
-		domain.setOrganization_guids(new String[] { org_guid });
-		domain.setSpace_guids(new String[] { space_guid });
 		domain.setWildcard(true);
 
 		try {
@@ -117,13 +115,14 @@ public class CCHelper {
 	}
 
 	private String addUserToDefaultSpace(String organization_guid,
-			String user_guid) {
+			String domain_guid, String user_guid) {
 		logger.debug("----------  CREATE CC SPACE   -----------");
 		Space space = new Space();
 		space.setName(SPACE_DEFAULT_NAME);
 		space.setOrganization_guid(organization_guid);
 		space.setManager_guids(new String[] { user_guid });
 		space.setDeveloper_guids(new String[] { user_guid });
+		space.setDomain_guids(new String[] { domain_guid });
 
 		try {
 			return createSpace(space);

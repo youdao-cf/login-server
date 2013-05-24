@@ -255,7 +255,7 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 		user.addEmail(email);
 		user.setPassword(DEFAULT_PASSWORD);
 		user.setUserType(UaaAuthority.UAA_NONE.getUserType());
-		user.setActive(false);
+		user.setActive(true);
 		ScimMeta meta = new ScimMeta();
 		Date now = new Date();
 		meta.setCreated(now);

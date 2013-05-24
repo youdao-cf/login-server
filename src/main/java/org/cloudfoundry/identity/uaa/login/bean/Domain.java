@@ -7,8 +7,6 @@ public class Domain {
 	private String name;
 	private boolean wildcard;
 	private String owning_organization_guid;
-	private String[] organization_guids;
-	private String[] space_guids;
 
 	public String getName() {
 		return name;
@@ -34,20 +32,5 @@ public class Domain {
 		this.owning_organization_guid = owning_organization_guid;
 	}
 
-	public String[] getOrganization_guids() {
-		return organization_guids;
-	}
-
-	public void setOrganization_guids(String[] organization_guids) {
-		this.organization_guids = organization_guids;
-	}
-
-	public String[] getSpace_guids() {
-		return space_guids;
-	}
-
-	public void setSpace_guids(String[] space_guids) {
-		this.space_guids = space_guids;
-	}
 
 }
