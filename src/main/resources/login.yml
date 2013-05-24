@@ -1,0 +1,19 @@
+uaa:
+  url: http://localhost:8080/uaa
+  token:
+    url: http://localhost:8080/uaa/oauth/token
+  login:
+    url: http://localhost:8080/uaa/authenticate
+  clientinfo:
+    url: https://localhost:8080/uaa/clientinfo
+  approvals:
+    url: https://localhost:8080/uaa/approvals
+login:
+  authorize:
+    url: https://localhost:8080/login/oauth/authorize
+cc:
+  api:
+    url: http://api.vcap.me
+ldap:
+  url: ldap://soda.rd.netease.com:389/
+  basedn: ou=people,dc=rd,dc=netease,dc=com
