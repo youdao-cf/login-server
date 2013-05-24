@@ -208,10 +208,10 @@ public class RemoteUaaAuthenticationManager implements AuthenticationManager {
 				throw new RuntimeException("Cannot add CC User for " + username);
 			}
 
-			logger.info("Adding Organization for User.....");
-			if (!ccHelper.addUserToOrg(username, user.getId())) {
-				logger.error("Cannot create CC Organization for " + username);
-				throw new RuntimeException("Cannot create CC Organization for "
+			logger.info("Adding Organization and Space for User.....");
+			if (!ccHelper.addUserToOrgAndSpace(username, user.getId())) {
+				logger.error("Cannot create CC Organization and Space for " + username);
+				throw new RuntimeException("Cannot create CC Organization and Space for "
 						+ username);
 			}
 
