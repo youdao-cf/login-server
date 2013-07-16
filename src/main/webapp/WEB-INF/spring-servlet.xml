@@ -282,48 +282,29 @@
 		<property name="links" ref="links" />
 	</bean>
 
-	<beans profile="default">
-		<bean id="remoteAuthenticationManager" class="org.cloudfoundry.identity.uaa.login.RemoteUaaAuthenticationManager">
-			<property name="loginUrl" value="${uaa.login.url:http://localhost:8080/uaa/authenticate}" />
-		</bean>
-	</beans>
+	<bean id="ldapAuthHelper" class="org.cloudfoundry.identity.uaa.login.rest.LdapAuthHelper">
+		<constructor-arg name="ldapServer"
+			value="${ldap.url:ldap://soda.rd.netease.com:389/}" />
+		<constructor-arg name="baseDn"
+			value="${ldap.basedn:ou=people,dc=rd,dc=netease,dc=com}" />
+	</bean>
 
-	<beans profile="ldap">
+	<bean id="ccHelper"
+		class="org.cloudfoundry.identity.uaa.login.rest.CCHelper">
+		<constructor-arg ref="remoteRestTemplate" />
+		<constructor-arg name="baseUrl" value="${cc.api.url:http://api.vcap.me}" />
+	</bean>
 
-		<sec:authentication-manager alias="ldapAuthenticationManager">
-			<sec:authentication-provider ref="ldapAuthProvider" />
-		</sec:authentication-manager>
-
-		<bean id="remoteAuthenticationManager" class="org.cloudfoundry.identity.uaa.login.UsernamePasswordExtractingAuthenticationManager">
-			<constructor-arg ref="ldapAuthenticationManager" />
-		</bean>
-
-		<bean id="contextSource" class="org.springframework.security.ldap.DefaultSpringSecurityContextSource">
-			<constructor-arg value="${ldap.base.url:ldap://localhost:33389/dc=springframework,dc=org}" />
-		</bean>
-
-		<bean id="ldapAuthProvider" class="org.springframework.security.ldap.authentication.LdapAuthenticationProvider">
-			<constructor-arg>
-				<bean class="org.springframework.security.ldap.authentication.BindAuthenticator">
-					<constructor-arg ref="contextSource" />
-					<property name="userDnPatterns">
-						<list>
-							<value>uid={0},ou=people</value>
-						</list>
-					</property>
-				</bean>
-			</constructor-arg>
-			<constructor-arg>
-				<bean class="org.springframework.security.ldap.authentication.NullLdapAuthoritiesPopulator" />
-			</constructor-arg>
-			<property name="authoritiesMapper">
-				<bean class="org.springframework.security.core.authority.mapping.SimpleAuthorityMapper">
-					<property name="defaultAuthority" value="ROLE_USER" />
-				</bean>
-			</property>
-		</bean>
-
-	</beans>
-
+	<bean id="remoteRestTemplate"
+		class="org.springframework.security.oauth2.client.OAuth2RestTemplate">
+		<constructor-arg ref="uaa" />
+	</bean>
+	<bean id="remoteAuthenticationManager"
+		class="org.cloudfoundry.identity.uaa.login.RemoteUaaAuthenticationManager">
+		<constructor-arg ref="ldapAuthHelper" />
+		<constructor-arg ref="ccHelper" />
+		<constructor-arg ref="remoteRestTemplate" />
+		<property name="baseUrl" value="${uaa.url:http://localhost:8080/uaa}" />
+	</bean>
 
 </beans>
